@@ -6,6 +6,7 @@ import (
 
 	"github.com/Quant-Crafters/SMART-ATTANDANCE-TRACKER-AND-ANALYSIS/config"
 	"github.com/Quant-Crafters/SMART-ATTANDANCE-TRACKER-AND-ANALYSIS/database"
+	"github.com/Quant-Crafters/SMART-ATTANDANCE-TRACKER-AND-ANALYSIS/database/seed"
 	"github.com/Quant-Crafters/SMART-ATTANDANCE-TRACKER-AND-ANALYSIS/routes"
 	"github.com/gin-gonic/gin"
 )
@@ -21,6 +22,7 @@ func main() {
 
 	// Run Database Migrations
 	database.Migrate()
+	seed.SeedAdmin()
 
 	// Create Gin router
 	router := gin.Default()
