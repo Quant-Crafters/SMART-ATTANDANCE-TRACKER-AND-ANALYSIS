@@ -1,0 +1,723 @@
+openapi: 3.0.3
+
+info:
+  title: AttendSmart API
+  description: >
+    Automated Student Attendance Monitoring & Analytics System
+    for Colleges.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+tags:
+  - name: Health
+    description: Server health
+  - name: Authentication
+    description: Authentication APIs
+  - name: Students
+    description: Student management APIs
+  - name: Faculty
+    description: Faculty management APIs
+  - name: Departments
+    description: Department management APIs
+  - name: Subjects
+    description: Subject management APIs
+  - name: Attendance
+    description: Attendance management APIs
+  - name: Notifications
+    description: Notification APIs
+  - name: Dashboard
+    description: Dashboard APIs
+  - name: Reports
+    description: Report generation APIs
+
+paths:
+
+  /:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      responses:
+        "200":
+          description: Backend is running
+
+  /api/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+        "400":
+          description: Invalid credentials
+
+  /api/profile:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Profile fetched successfully
+        "401":
+          description: Unauthorized
+
+  # =========================================================
+  # STUDENTS
+  # =========================================================
+
+  /api/students:
+    get:
+      tags:
+        - Students
+      summary: Get all students
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Students fetched successfully
+
+    post:
+      tags:
+        - Students
+      summary: Create student
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStudentRequest"
+      responses:
+        "201":
+          description: Student created successfully
+        "400":
+          description: Invalid student data
+
+  /api/students/{id}:
+    get:
+      tags:
+        - Students
+      summary: Get student by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: Student fetched successfully
+        "404":
+          description: Student not found
+
+    put:
+      tags:
+        - Students
+      summary: Update student
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStudentRequest"
+      responses:
+        "200":
+          description: Student updated successfully
+
+    delete:
+      tags:
+        - Students
+      summary: Delete student
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: Student deleted successfully
+
+  # =========================================================
+  # FACULTY
+  # =========================================================
+
+  /api/faculty:
+    get:
+      tags:
+        - Faculty
+      summary: Get all faculty
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Faculty fetched successfully
+
+    post:
+      tags:
+        - Faculty
+      summary: Create faculty
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFacultyRequest"
+      responses:
+        "201":
+          description: Faculty created successfully
+
+  /api/faculty/{id}:
+    get:
+      tags:
+        - Faculty
+      summary: Get faculty by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: Faculty fetched successfully
+
+    put:
+      tags:
+        - Faculty
+      summary: Update faculty
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFacultyRequest"
+      responses:
+        "200":
+          description: Faculty updated successfully
+
+    delete:
+      tags:
+        - Faculty
+      summary: Delete faculty
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: Faculty deleted successfully
+
+  # =========================================================
+  # DEPARTMENTS
+  # =========================================================
+
+  /api/departments:
+    get:
+      tags:
+        - Departments
+      summary: Get all departments
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Departments fetched successfully
+
+    post:
+      tags:
+        - Departments
+      summary: Create department
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDepartmentRequest"
+      responses:
+        "201":
+          description: Department created successfully
+
+  /api/departments/{id}:
+    get:
+      tags:
+        - Departments
+      summary: Get department by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: Department fetched successfully
+
+    put:
+      tags:
+        - Departments
+      summary: Update department
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateDepartmentRequest"
+      responses:
+        "200":
+          description: Department updated successfully
+
+    delete:
+      tags:
+        - Departments
+      summary: Delete department
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: Department deleted successfully
+
+  # =========================================================
+  # SUBJECTS
+  # =========================================================
+
+  /api/subjects:
+    get:
+      tags:
+        - Subjects
+      summary: Get all subjects
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Subjects fetched successfully
+
+    post:
+      tags:
+        - Subjects
+      summary: Create subject
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSubjectRequest"
+      responses:
+        "201":
+          description: Subject created successfully
+
+  /api/subjects/{id}:
+    get:
+      tags:
+        - Subjects
+      summary: Get subject by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: Subject fetched successfully
+
+    put:
+      tags:
+        - Subjects
+      summary: Update subject
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSubjectRequest"
+      responses:
+        "200":
+          description: Subject updated successfully
+
+    delete:
+      tags:
+        - Subjects
+      summary: Delete subject
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: Subject deleted successfully
+
+  # =========================================================
+  # ATTENDANCE
+  # =========================================================
+
+  /api/attendance:
+    get:
+      tags:
+        - Attendance
+      summary: Get attendance records
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Attendance fetched successfully
+
+    post:
+      tags:
+        - Attendance
+      summary: Mark attendance
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAttendanceRequest"
+      responses:
+        "201":
+          description: Attendance marked successfully
+        "400":
+          description: Invalid attendance data
+
+  /api/attendance/{id}:
+    put:
+      tags:
+        - Attendance
+      summary: Update attendance
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAttendanceRequest"
+      responses:
+        "200":
+          description: Attendance updated successfully
+
+    delete:
+      tags:
+        - Attendance
+      summary: Delete attendance
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: Attendance deleted successfully
+
+  /api/attendance/history/{student_id}:
+    get:
+      tags:
+        - Attendance
+      summary: Get student attendance history
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: student_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Attendance history fetched successfully
+
+  /api/attendance/percentage/{student_id}:
+    get:
+      tags:
+        - Attendance
+      summary: Get attendance percentage
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: student_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Attendance percentage calculated successfully
+
+components:
+
+  securitySchemes:
+
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+
+    ID:
+      name: id
+      in: path
+      required: true
+      description: Database record ID
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+
+  schemas:
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: admin@college.edu
+        password:
+          type: string
+          format: password
+          example: Admin@123
+
+    CreateStudentRequest:
+      type: object
+      required:
+        - student_id
+        - name
+        - email
+        - department
+        - semester
+      properties:
+        student_id:
+          type: string
+          example: CSE2026001
+        name:
+          type: string
+          example: Rahul Sharma
+        email:
+          type: string
+          format: email
+          example: rahul.sharma@college.edu
+        phone:
+          type: string
+          example: "9876543210"
+        department:
+          type: string
+          example: CSE
+        semester:
+          type: integer
+          example: 5
+        section:
+          type: string
+          example: A
+        year:
+          type: integer
+          example: 3
+
+    UpdateStudentRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        department:
+          type: string
+        semester:
+          type: integer
+        section:
+          type: string
+        year:
+          type: integer
+        status:
+          type: boolean
+
+    CreateFacultyRequest:
+      type: object
+      required:
+        - faculty_id
+        - name
+        - email
+      properties:
+        faculty_id:
+          type: string
+          example: FAC2026001
+        name:
+          type: string
+          example: Dr. Amit Sharma
+        email:
+          type: string
+          format: email
+          example: amit.sharma@college.edu
+        phone:
+          type: string
+        department:
+          type: string
+          example: CSE
+        designation:
+          type: string
+          example: Assistant Professor
+
+    UpdateFacultyRequest:
+      type: object
+      required:
+        - name
+        - email
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        department:
+          type: string
+        designation:
+          type: string
+
+    CreateDepartmentRequest:
+      type: object
+      required:
+        - name
+        - code
+      properties:
+        name:
+          type: string
+          example: Computer Science and Engineering
+        code:
+          type: string
+          example: CSE
+        description:
+          type: string
+
+    UpdateDepartmentRequest:
+      type: object
+      required:
+        - name
+        - code
+      properties:
+        name:
+          type: string
+        code:
+          type: string
+        description:
+          type: string
+
+    CreateSubjectRequest:
+      type: object
+      required:
+        - name
+        - code
+        - department_id
+        - semester
+      properties:
+        name:
+          type: string
+          example: Database Management Systems
+        code:
+          type: string
+          example: CS501
+        department_id:
+          type: integer
+          example: 1
+        semester:
+          type: integer
+          example: 5
+        credits:
+          type: integer
+          example: 4
+
+    UpdateSubjectRequest:
+      type: object
+      required:
+        - name
+        - code
+        - department_id
+        - semester
+      properties:
+        name:
+          type: string
+        code:
+          type: string
+        department_id:
+          type: integer
+        semester:
+          type: integer
+        credits:
+          type: integer
+
+    CreateAttendanceRequest:
+      type: object
+      required:
+        - student_id
+        - subject_id
+        - faculty_id
+        - date
+        - status
+      properties:
+        student_id:
+          type: integer
+          example: 1
+        subject_id:
+          type: integer
+          example: 1
+        faculty_id:
+          type: integer
+          example: 1
+        date:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum:
+            - present
+            - absent
+            - late
+          example: present
+
+    UpdateAttendanceRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - present
+            - absent
+            - late
