@@ -1,8 +1,7 @@
 package routes
 
 import (
-	"net/http"
-
+	"github.com/Quant-Crafters/SMART-ATTANDANCE-TRACKER-AND-ANALYSIS/internal/analytics"
 	"github.com/Quant-Crafters/SMART-ATTANDANCE-TRACKER-AND-ANALYSIS/internal/middleware"
 	"github.com/gin-gonic/gin"
 )
@@ -10,76 +9,40 @@ import (
 // RegisterAnalyticsRoutes registers analytics routes.
 func RegisterAnalyticsRoutes(router *gin.Engine) {
 
+	handler := analytics.NewHandler()
+
 	api := router.Group("/api/analytics")
 	{
-		// Admin & Faculty - Overall attendance analytics
+		// Overall attendance analytics
 		api.GET(
 			"/attendance",
 			middleware.AuthMiddleware(),
 			middleware.RoleMiddleware("admin", "faculty"),
-			func(c *gin.Context) {
-				c.JSON(http.StatusOK, gin.H{
-					"success": true,
-					"message": "Attendance analytics endpoint",
-					"data":   nil,
-				})
-			},
+			handler.GetAttendanceAnalytics,
 		)
 
-		// Admin & Faculty - Student-wise analytics
+		// Student-wise analytics
 		api.GET(
-			"/students",
+			"/students/:student_id",
+			middleware.AuthMiddleware(),
+			middleware.RoleMiddleware("admin", "faculty", "student"),
+			handler.GetStudentAnalytics,
+		)
+
+		// Subject-wise analytics
+		api.GET(
+			"/subjects/:subject_id",
 			middleware.AuthMiddleware(),
 			middleware.RoleMiddleware("admin", "faculty"),
-			func(c *gin.Context) {
-				c.JSON(http.StatusOK, gin.H{
-					"success": true,
-					"message": "Student analytics endpoint",
-					"data":   nil,
-				})
-			},
+			handler.GetSubjectAnalytics,
 		)
 
-		// Admin & Faculty - Department-wise analytics
-		api.GET(
-			"/departments",
-			middleware.AuthMiddleware(),
-			middleware.RoleMiddleware("admin", "faculty"),
-			func(c *gin.Context) {
-				c.JSON(http.StatusOK, gin.H{
-					"success": true,
-					"message": "Department analytics endpoint",
-					"data":   nil,
-				})
-			},
-		)
-
-		// Admin & Faculty - Subject-wise analytics
-		api.GET(
-			"/subjects",
-			middleware.AuthMiddleware(),
-			middleware.RoleMiddleware("admin", "faculty"),
-			func(c *gin.Context) {
-				c.JSON(http.StatusOK, gin.H{
-					"success": true,
-					"message": "Subject analytics endpoint",
-					"data":   nil,
-				})
-			},
-		)
-
-		// Admin only - Dashboard analytics
+		// Admin dashboard analytics
 		api.GET(
 			"/dashboard",
 			middleware.AuthMiddleware(),
 			middleware.RoleMiddleware("admin"),
-			func(c *gin.Context) {
-				c.JSON(http.StatusOK, gin.H{
-					"success": true,
-					"message": "Analytics dashboard endpoint",
-					"data":   nil,
-				})
-			},
+			handler.GetDashboardAnalytics,
 		)
 	}
 }

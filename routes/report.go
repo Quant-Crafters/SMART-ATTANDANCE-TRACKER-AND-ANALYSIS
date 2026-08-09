@@ -34,7 +34,7 @@ func RegisterReportRoutes(router *gin.Engine) {
 			"/pdf",
 			middleware.AuthMiddleware(),
 			middleware.RoleMiddleware("admin", "faculty"),
-			handler. GenerateCSVReport,
+			handler.GeneratePDFReport,
 		)
 	}
 }

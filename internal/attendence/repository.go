@@ -108,3 +108,36 @@ func (r *Repository) GetAttendanceCounts(studentID uint) (int64, int64, error) {
 
 	return total, present, nil
 }
+
+
+// GetSubjectWiseAttendance returns subject-wise attendance for a student.
+func (r *Repository) GetSubjectWiseAttendance(
+	studentID uint,
+) ([]SubjectAttendanceResponse, error) {
+
+	var records []SubjectAttendanceResponse
+
+	err := r.db.
+		Table("attendance a").
+		Select(`
+			a.subject_id AS subject_id,
+			s.name AS subject_name,
+			s.code AS subject_code,
+			COUNT(a.id) AS total_classes,
+			COUNT(CASE WHEN a.status = 'present' THEN 1 END) AS present,
+			COUNT(CASE WHEN a.status = 'absent' THEN 1 END) AS absent,
+			COUNT(CASE WHEN a.status = 'late' THEN 1 END) AS late,
+			ROUND(
+				100.0 * COUNT(CASE WHEN a.status = 'present' THEN 1 END)
+				/ NULLIF(COUNT(a.id), 0),
+				2
+			) AS attendance_percent
+		`).
+		Joins("JOIN subjects s ON s.id = a.subject_id").
+		Where("a.student_id = ?", studentID).
+		Group("a.subject_id, s.name, s.code").
+		Order("s.code").
+		Scan(&records).Error
+
+	return records, err
+}

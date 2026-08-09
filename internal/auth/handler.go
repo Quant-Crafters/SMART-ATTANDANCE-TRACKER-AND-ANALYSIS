@@ -45,3 +45,45 @@ func (h *Handler) Login(c *gin.Context) {
 
 	response.Success(c, "Login successful", res)
 }
+
+// Register handles new user registration.
+func (h *Handler) Register(c *gin.Context) {
+
+	var req RegisterRequest
+
+	// Read JSON body.
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(
+			c,
+			http.StatusBadRequest,
+			"Invalid request body",
+		)
+		return
+	}
+
+	// Validate request.
+	if err := validator.ValidateStruct(req); err != nil {
+		response.ValidationError(
+			c,
+			validator.FormatValidationError(err),
+		)
+		return
+	}
+
+	// Register user.
+	user, err := h.service.Register(req)
+	if err != nil {
+		response.Error(
+			c,
+			http.StatusBadRequest,
+			err.Error(),
+		)
+		return
+	}
+
+	response.Success(
+		c,
+		"User registered successfully",
+		user,
+	)
+}

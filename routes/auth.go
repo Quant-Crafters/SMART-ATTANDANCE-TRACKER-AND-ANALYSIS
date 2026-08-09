@@ -16,6 +16,8 @@ func RegisterAuthRoutes(router *gin.Engine) {
 	{
 		// Public Route
 		api.POST("/login", handler.Login)
+		// Register Route
+api.POST("/register", handler.Register)
 
 		// Protected Route
 		api.GET("/profile", middleware.AuthMiddleware(), func(c *gin.Context) {

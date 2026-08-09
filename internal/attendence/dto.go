@@ -25,3 +25,16 @@ type AttendanceResponse struct {
 	Date      time.Time `json:"date"`
 	Status    string    `json:"status"`
 }
+
+
+// SubjectAttendanceResponse represents subject-wise attendance.
+type SubjectAttendanceResponse struct {
+	SubjectID         uint    `json:"subject_id"`
+	SubjectName       string  `json:"subject_name"`
+	SubjectCode       string  `json:"subject_code"`
+	TotalClasses      int64   `json:"total_classes"`
+	Present           int64   `json:"present"`
+	Absent            int64   `json:"absent"`
+	Late              int64   `json:"late"`
+	AttendancePercent float64 `json:"attendance_percentage"`
+}

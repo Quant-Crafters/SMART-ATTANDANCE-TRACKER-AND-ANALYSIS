@@ -59,3 +59,27 @@ func (r *Repository) Delete(student *Student) error {
 
 	return r.db.Delete(student).Error
 }
+
+// GetByEmail returns a student by email.
+func (r *Repository) GetByEmail(email string) (*Student, error) {
+	var student Student
+
+	err := r.db.Where("email = ?", email).First(&student).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &student, nil
+}
+
+// GetByStudentID returns a student by student ID.
+func (r *Repository) GetByStudentID(studentID string) (*Student, error) {
+	var student Student
+
+	err := r.db.Where("student_id = ?", studentID).First(&student).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &student, nil
+}

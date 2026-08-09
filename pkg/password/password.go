@@ -15,3 +15,4 @@ func CheckPassword(hashedPassword, password string) error {
 		[]byte(password),
 	)
 }
+

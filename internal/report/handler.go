@@ -88,3 +88,40 @@ func (h *Handler) GenerateExcelReport(c *gin.Context) {
 		},
 	)
 }
+
+// GeneratePDFReport generates a PDF attendance report.
+func (h *Handler) GeneratePDFReport(c *gin.Context) {
+
+	headers := []string{
+		"Student ID",
+		"Name",
+		"Department",
+		"Attendance %",
+	}
+
+	rows := [][]string{}
+
+	filePath, err := GeneratePDF(
+		"attendance_report",
+		"Attendance Report",
+		headers,
+		rows,
+	)
+
+	if err != nil {
+		response.Error(
+			c,
+			http.StatusInternalServerError,
+			"Failed to generate PDF report",
+		)
+		return
+	}
+
+	response.Success(
+		c,
+		"PDF report generated successfully",
+		gin.H{
+			"file_path": filePath,
+		},
+	)
+}
