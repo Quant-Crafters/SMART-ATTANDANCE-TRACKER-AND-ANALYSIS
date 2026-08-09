@@ -8,7 +8,6 @@ import (
 
 // GenerateQR generates a QR code and saves it as a PNG file.
 func GenerateQR(data string, filePath string) error {
-
 	if data == "" {
 		return fmt.Errorf("QR data cannot be empty")
 	}
@@ -29,4 +28,23 @@ func GenerateQR(data string, filePath string) error {
 	}
 
 	return nil
+}
+
+// GenerateQRBytes generates a QR code and returns the PNG bytes.
+// This is used when the frontend needs the QR image directly.
+func GenerateQRBytes(data string) ([]byte, error) {
+	if data == "" {
+		return nil, fmt.Errorf("QR data cannot be empty")
+	}
+
+	png, err := qrcode.Encode(
+		data,
+		qrcode.Medium,
+		400,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate QR code: %w", err)
+	}
+
+	return png, nil
 }

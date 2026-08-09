@@ -15,6 +15,6 @@ var JWT JWTConfig
 func LoadJWTConfig() {
 	JWT = JWTConfig{
 		SecretKey: AppConfig.JWTSecret,
-		Expiry:    24 * time.Hour,
+		Expiry:    72 * time.Hour,
 	}
 }

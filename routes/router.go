@@ -23,6 +23,9 @@ func SetupRouter(router *gin.Engine) {
 	// Attendance
 	RegisterAttendenceRoutes(router)
 
+	// QR Attendance
+	RegisterQRAttendanceRoutes(router)
+
 	// Analytics
 	RegisterAnalyticsRoutes(router)
 
