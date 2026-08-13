@@ -1,0 +1,15 @@
+{
+  "executionEnvironments": [
+    {
+      "root": "ai_engine",
+      "extraPaths": [
+        "ai_engine",
+        "C:\\Users\\ashud\\anaconda3\\Lib\\site-packages"
+      ]
+    }
+  ],
+  "extraPaths": [
+    "ai_engine",
+    "C:\\Users\\ashud\\anaconda3\\Lib\\site-packages"
+  ]
+}

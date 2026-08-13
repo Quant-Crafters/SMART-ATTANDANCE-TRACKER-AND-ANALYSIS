@@ -1,4 +1,15 @@
 # ==========================
+# Python & Bytecode Files
+# ==========================
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+
+# ==========================
 # Environment Files
 # ==========================
 .env
@@ -6,30 +17,29 @@
 !.env.example
 
 # ==========================
-# Build Files
+# Build & Model Cache Files
 # ==========================
 bin/
 dist/
+*.egg-info/
 
 # ==========================
-# Logs
+# Logs & Database
 # ==========================
 *.log
+*.sqlite
+*.db
 
 # ==========================
-# Uploads
+# Uploads & Reports
 # ==========================
 uploads/
 
 # ==========================
-# IDE Files
+# IDE & OS Files
 # ==========================
 .vscode/
 .idea/
-
-# ==========================
-# OS Files
-# ==========================
 .DS_Store
 Thumbs.db
 
