@@ -33,42 +33,95 @@ export default function Login() {
   };
 
   return (
-    <div>
-      <h1>AttendSmart</h1>
+    <div className="min-h-screen bg-[#0b0d12] text-white flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        {/* Brand */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold tracking-tight text-white">
+            Attend<span className="text-blue-500">Smart</span>
+          </h1>
 
-      <h2>Login</h2>
-
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Email</label>
-
-          <input
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="Enter your email"
-            required
-          />
+          <p className="mt-3 text-sm text-gray-400">
+            Automated Student Attendance & Analytics
+          </p>
         </div>
 
-        <div>
-          <label>Password</label>
+        {/* Login Card */}
+        <div className="rounded-2xl border border-[#252a35] bg-[#11141b] p-8 shadow-2xl">
+          <div className="mb-7">
+            <h2 className="text-2xl font-semibold text-white">
+              Welcome back
+            </h2>
 
-          <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="Enter your password"
-            required
-          />
+            <p className="mt-2 text-sm text-gray-400">
+              Sign in to access your AttendSmart dashboard.
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Email */}
+            <div>
+              <label
+                htmlFor="email"
+                className="mb-2 block text-sm font-medium text-gray-300"
+              >
+                Email
+              </label>
+
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="Enter your email"
+                required
+                className="w-full rounded-lg border border-[#2a303c] bg-[#0b0d12] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* Password */}
+            <div>
+              <label
+                htmlFor="password"
+                className="mb-2 block text-sm font-medium text-gray-300"
+              >
+                Password
+              </label>
+
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Enter your password"
+                required
+                className="w-full rounded-lg border border-[#2a303c] bg-[#0b0d12] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* Error */}
+            {error && (
+              <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3">
+                <p className="text-sm text-red-400">{error}</p>
+              </div>
+            )}
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {submitting ? "Logging in..." : "Login"}
+            </button>
+          </form>
         </div>
 
-        {error && <p>{error}</p>}
-
-        <button type="submit" disabled={submitting}>
-          {submitting ? "Logging in..." : "Login"}
-        </button>
-      </form>
+        {/* Footer */}
+        <p className="mt-6 text-center text-xs text-gray-600">
+          AttendSmart • Automated Attendance Monitoring & Analytics
+        </p>
+      </div>
     </div>
   );
 }
