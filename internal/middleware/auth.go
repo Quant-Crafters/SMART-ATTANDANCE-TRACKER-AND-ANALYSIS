@@ -8,12 +8,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// AuthMiddleware validates JWT token and sets user information in context.
+// AuthMiddleware verifies JWT token.
 func AuthMiddleware() gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 
-		// Get Authorization header
 		authHeader := c.GetHeader("Authorization")
 
 		if authHeader == "" {
@@ -25,10 +24,9 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// Check Bearer token format
-		parts := strings.SplitN(authHeader, " ", 2)
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
-		if len(parts) != 2 || parts[0] != "Bearer" {
+		if tokenString == authHeader {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
 				"message": "Invalid authorization format",
@@ -37,9 +35,6 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		tokenString := parts[1]
-
-		// Validate JWT token
 		claims, err := jwtutil.ValidateToken(tokenString)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{
@@ -50,7 +45,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// Store user information in Gin context
+		// Save user information in request context
 		c.Set("user_id", claims.UserID)
 		c.Set("email", claims.Email)
 		c.Set("role", claims.Role)
