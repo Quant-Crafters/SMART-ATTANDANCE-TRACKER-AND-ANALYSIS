@@ -71,3 +71,7 @@ func (s *Service) DeleteStudent(id uint) error {
 
 	return s.repo.Delete(student)
 }
+// GetStudentByEmail returns a student by email.
+func (s *Service) GetStudentByEmail(email string) (*Student, error) {
+	return s.repo.GetByEmail(email)
+}

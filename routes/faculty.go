@@ -1,6 +1,5 @@
 package routes
 
-
 import (
 	"github.com/Quant-Crafters/SMART-ATTANDANCE-TRACKER-AND-ANALYSIS/internal/faculty"
 	"github.com/Quant-Crafters/SMART-ATTANDANCE-TRACKER-AND-ANALYSIS/internal/middleware"
@@ -14,21 +13,30 @@ func RegisterFacultyRoutes(router *gin.Engine) {
 
 	api := router.Group("/api/faculty")
 	{
-		// Get all faculty
+		// Logged-in faculty can view ONLY their own profile.
+		api.GET(
+			"/me",
+			middleware.AuthMiddleware(),
+			middleware.RoleMiddleware("faculty"),
+			handler.GetMyFaculty,
+		)
+
+		// Authenticated users can view faculty directory.
+		// Frontend will show this to admin.
 		api.GET(
 			"/",
 			middleware.AuthMiddleware(),
 			handler.GetFaculties,
 		)
 
-		// Get faculty by ID
+		// Get faculty by ID.
 		api.GET(
 			"/:id",
 			middleware.AuthMiddleware(),
 			handler.GetFacultyByID,
 		)
 
-		// Create faculty - Admin only
+		// Create faculty - Admin only.
 		api.POST(
 			"/",
 			middleware.AuthMiddleware(),
@@ -36,7 +44,7 @@ func RegisterFacultyRoutes(router *gin.Engine) {
 			handler.CreateFaculty,
 		)
 
-		// Update faculty - Admin only
+		// Update faculty - Admin only.
 		api.PUT(
 			"/:id",
 			middleware.AuthMiddleware(),
@@ -44,7 +52,7 @@ func RegisterFacultyRoutes(router *gin.Engine) {
 			handler.UpdateFaculty,
 		)
 
-		// Delete faculty - Admin only
+		// Delete faculty - Admin only.
 		api.DELETE(
 			"/:id",
 			middleware.AuthMiddleware(),

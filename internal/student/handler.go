@@ -119,3 +119,34 @@ func (h *Handler) DeleteStudent(c *gin.Context) {
 
 	response.Success(c, "Student deleted successfully", nil)
 }
+// added by me
+// GetMyStudent handles fetching the logged-in student's own record.
+func (h *Handler) GetMyStudent(c *gin.Context) {
+
+	email := c.GetString("email")
+
+	if email == "" {
+		response.Error(
+			c,
+			http.StatusUnauthorized,
+			"User email not found",
+		)
+		return
+	}
+
+	student, err := h.service.GetStudentByEmail(email)
+	if err != nil {
+		response.Error(
+			c,
+			http.StatusNotFound,
+			"Student profile not found",
+		)
+		return
+	}
+
+	response.Success(
+		c,
+		"Student profile fetched successfully",
+		student,
+	)
+}

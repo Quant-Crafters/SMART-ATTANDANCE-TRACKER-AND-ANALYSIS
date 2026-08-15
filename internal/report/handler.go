@@ -1,23 +1,79 @@
 package report
 
 import (
+	"fmt"
 	"net/http"
+	"path/filepath"
 
+	"github.com/Quant-Crafters/SMART-ATTANDANCE-TRACKER-AND-ANALYSIS/config"
 	"github.com/Quant-Crafters/SMART-ATTANDANCE-TRACKER-AND-ANALYSIS/pkg/response"
 	"github.com/gin-gonic/gin"
 )
 
-// Handler handles report-related HTTP requests.
-type Handler struct {
-}
+type Handler struct{}
 
-// NewHandler creates a new report handler.
 func NewHandler() *Handler {
 	return &Handler{}
 }
 
-// GenerateCSVReport generates a CSV report.
+// AttendanceReportRow represents one student in the report.
+type AttendanceReportRow struct {
+	StudentID  string  `json:"student_id"`
+	Name       string  `json:"name"`
+	Department string  `json:"department"`
+	Attendance float64 `json:"attendance"`
+}
+
+// getAttendanceReportData gets real student attendance data.
+func (h *Handler) getAttendanceReportData() ([]AttendanceReportRow, error) {
+
+	var rows []AttendanceReportRow
+
+	err := config.DB.Raw(`
+		SELECT
+			s.student_id,
+			s.name,
+			s.department,
+			COALESCE(
+				ROUND(
+					100.0 *
+					COUNT(
+						CASE
+							WHEN a.status = 'present' THEN 1
+						END
+					)
+					/ NULLIF(COUNT(a.id), 0),
+					2
+				),
+				0
+			) AS attendance
+		FROM students s
+		LEFT JOIN attendance a
+			ON a.student_id = s.id
+		GROUP BY
+			s.id,
+			s.student_id,
+			s.name,
+			s.department
+		ORDER BY
+			s.student_id
+	`).Scan(&rows).Error
+
+	return rows, err
+}
+
+// GenerateCSVReport generates and downloads a CSV attendance report.
 func (h *Handler) GenerateCSVReport(c *gin.Context) {
+
+	data, err := h.getAttendanceReportData()
+	if err != nil {
+		response.Error(
+			c,
+			http.StatusInternalServerError,
+			"Failed to fetch report data",
+		)
+		return
+	}
 
 	headers := []string{
 		"Student ID",
@@ -26,7 +82,16 @@ func (h *Handler) GenerateCSVReport(c *gin.Context) {
 		"Attendance %",
 	}
 
-	rows := [][]string{}
+	rows := make([][]string, 0, len(data))
+
+	for _, item := range data {
+		rows = append(rows, []string{
+			item.StudentID,
+			item.Name,
+			item.Department,
+			formatPercentage(item.Attendance),
+		})
+	}
 
 	filePath, err := GenerateCSV(
 		"attendance_report",
@@ -43,17 +108,30 @@ func (h *Handler) GenerateCSVReport(c *gin.Context) {
 		return
 	}
 
-	response.Success(
-		c,
-		"CSV report generated successfully",
-		gin.H{
-			"file_path": filePath,
-		},
+	// Tell browser this is a CSV file.
+	c.Header(
+		"Content-Type",
+		"text/csv; charset=utf-8",
+	)
+
+	c.FileAttachment(
+		filePath,
+		filepath.Base(filePath),
 	)
 }
 
-// GenerateExcelReport generates an Excel report.
+// GenerateExcelReport generates and downloads an Excel attendance report.
 func (h *Handler) GenerateExcelReport(c *gin.Context) {
+
+	data, err := h.getAttendanceReportData()
+	if err != nil {
+		response.Error(
+			c,
+			http.StatusInternalServerError,
+			"Failed to fetch report data",
+		)
+		return
+	}
 
 	headers := []string{
 		"Student ID",
@@ -62,7 +140,16 @@ func (h *Handler) GenerateExcelReport(c *gin.Context) {
 		"Attendance %",
 	}
 
-	rows := [][]interface{}{}
+	rows := make([][]interface{}, 0, len(data))
+
+	for _, item := range data {
+		rows = append(rows, []interface{}{
+			item.StudentID,
+			item.Name,
+			item.Department,
+			item.Attendance,
+		})
+	}
 
 	filePath, err := GenerateExcel(
 		"attendance_report",
@@ -80,17 +167,30 @@ func (h *Handler) GenerateExcelReport(c *gin.Context) {
 		return
 	}
 
-	response.Success(
-		c,
-		"Excel report generated successfully",
-		gin.H{
-			"file_path": filePath,
-		},
+	// Tell browser this is an Excel file.
+	c.Header(
+		"Content-Type",
+		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+	)
+
+	c.FileAttachment(
+		filePath,
+		filepath.Base(filePath),
 	)
 }
 
-// GeneratePDFReport generates a PDF attendance report.
+// GeneratePDFReport generates and downloads a PDF attendance report.
 func (h *Handler) GeneratePDFReport(c *gin.Context) {
+
+	data, err := h.getAttendanceReportData()
+	if err != nil {
+		response.Error(
+			c,
+			http.StatusInternalServerError,
+			"Failed to fetch report data",
+		)
+		return
+	}
 
 	headers := []string{
 		"Student ID",
@@ -99,7 +199,16 @@ func (h *Handler) GeneratePDFReport(c *gin.Context) {
 		"Attendance %",
 	}
 
-	rows := [][]string{}
+	rows := make([][]string, 0, len(data))
+
+	for _, item := range data {
+		rows = append(rows, []string{
+			item.StudentID,
+			item.Name,
+			item.Department,
+			formatPercentage(item.Attendance),
+		})
+	}
 
 	filePath, err := GeneratePDF(
 		"attendance_report",
@@ -117,11 +226,19 @@ func (h *Handler) GeneratePDFReport(c *gin.Context) {
 		return
 	}
 
-	response.Success(
-		c,
-		"PDF report generated successfully",
-		gin.H{
-			"file_path": filePath,
-		},
+	// Tell browser this is a PDF file.
+	c.Header(
+		"Content-Type",
+		"application/pdf",
 	)
+
+	c.FileAttachment(
+		filePath,
+		filepath.Base(filePath),
+	)
+}
+
+// formatPercentage formats attendance as a percentage string.
+func formatPercentage(value float64) string {
+	return fmt.Sprintf("%.2f%%", value)
 }

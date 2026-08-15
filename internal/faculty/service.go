@@ -134,3 +134,7 @@ func (s *Service) DeleteFaculty(id uint) error {
 
 	return s.repository.Delete(faculty)
 }
+// GetFacultyByEmail returns a faculty member by email.
+func (s *Service) GetFacultyByEmail(email string) (*Faculty, error) {
+	return s.repository.GetByEmail(email)
+}

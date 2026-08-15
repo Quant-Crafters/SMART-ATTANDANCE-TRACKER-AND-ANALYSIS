@@ -169,3 +169,33 @@ func (h *Handler) DeleteFaculty(c *gin.Context) {
 		nil,
 	)
 }
+// GetMyFaculty handles fetching the logged-in faculty member's own profile.
+func (h *Handler) GetMyFaculty(c *gin.Context) {
+
+	email := c.GetString("email")
+
+	if email == "" {
+		response.Error(
+			c,
+			http.StatusUnauthorized,
+			"User email not found",
+		)
+		return
+	}
+
+	faculty, err := h.service.GetFacultyByEmail(email)
+	if err != nil {
+		response.Error(
+			c,
+			http.StatusNotFound,
+			"Faculty profile not found",
+		)
+		return
+	}
+
+	response.Success(
+		c,
+		"Faculty profile fetched successfully",
+		faculty,
+	)
+}
