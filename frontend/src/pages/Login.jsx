@@ -172,50 +172,39 @@ const Login = () => {
       setLoading(true);
 
       try {
-        const response =
-          await apiClient.post(
-            '/login',
-            {
-              email,
-              password,
-            }
-          );
+       const response = await apiClient.post('/login', {
+  email,
+  password,
+});
 
-        console.log(
-          'LOGIN RESPONSE:',
-          response.data
-        );
+console.log('LOGIN RESPONSE:', response.data);
 
-        const data =
-          response.data?.data ||
-          response.data;
+const data = response.data?.data || response.data;
 
-        const token =
-          data?.token ||
-          data?.access_token;
+const token = data?.token;
+const user = data?.user;
 
-        const user =
-          data?.user;
+if (!token) {
+  throw new Error(
+    'Login succeeded but no token was returned.'
+  );
+}
 
-        if (!token) {
-          throw new Error(
-            'Login succeeded but no token was returned.'
-          );
-        }
+localStorage.setItem('token', token);
 
-        localStorage.setItem(
-          'token',
-          token
-        );
+if (user) {
+  localStorage.setItem(
+    'user',
+    JSON.stringify(user)
+  );
+}
 
-        if (user) {
-          localStorage.setItem(
-            'user',
-            JSON.stringify(user)
-          );
-        }
+console.log(
+  'TOKEN SAVED:',
+  localStorage.getItem('token')
+);
 
-        navigate('/dashboard');
+navigate('/dashboard');
       } catch (err) {
         console.error(
           'Login failed:',
@@ -296,7 +285,7 @@ const Login = () => {
             </div>
 
             <span className="brand-text">
-              AttendSmart
+              SMART ATTENDENCE
             </span>
 
           </div>
@@ -342,16 +331,16 @@ const Login = () => {
               </span>
 
               <h1 className="auth-title">
-                Sign in
+                SIGN IN
                 <br />
                 <span>
-                  account
+                  Account
                 </span>
               </h1>
 
               <p className="auth-subtitle">
                 Enter your credentials to access
-                your AttendSmart workspace.
+                your Smart Attendence workspace.
               </p>
 
               <div className="mini-controls">
@@ -536,7 +525,7 @@ const Login = () => {
                 </div>
 
                 <span className="auth-product">
-                  AttendSmart
+                  Smart Attendence
                 </span>
 
               </div>
@@ -607,10 +596,10 @@ const Login = () => {
                 </span>
 
                 <h2>
-                  Attendance,
+                  SMART
                   <br />
                   <span>
-                    reimagined.
+                    ATTENDENCE.
                   </span>
                 </h2>
 
@@ -641,7 +630,7 @@ const Login = () => {
                 </div>
 
                 <div className="explore-button">
-  Explore AttendSmart
+  EXPLORE SMART ATTENDENCE
   <ArrowRight size={13} />
 </div>
 

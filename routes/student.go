@@ -13,7 +13,7 @@ func RegisterStudentRoutes(router *gin.Engine) {
 
 	api := router.Group("/api")
 	{
-		// Student can view ONLY their own profile added by me 
+		// Student can view ONLY their own profile added by me
 		api.GET(
 			"/students/me",
 			middleware.AuthMiddleware(),

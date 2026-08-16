@@ -1,8 +1,10 @@
 package attendence
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/Quant-Crafters/SMART-ATTANDANCE-TRACKER-AND-ANALYSIS/pkg/response"
 	"github.com/gin-gonic/gin"
@@ -26,16 +28,91 @@ func (h *Handler) MarkAttendance(c *gin.Context) {
 	var req CreateAttendanceRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.ValidationError(c, "Invalid attendance data")
+		response.ValidationError(
+			c,
+			"Invalid attendance data",
+		)
 		return
 	}
 
-	attendance, err := h.service.MarkAttendance(req)
+	// --------------------------------------------------
+	// Get authenticated role
+	// --------------------------------------------------
+
+	role := strings.ToLower(
+		strings.TrimSpace(
+			c.GetString("role"),
+		),
+	)
+
+	// --------------------------------------------------
+	// Get authenticated faculty ID
+	//
+	// AuthMiddleware sets this only for faculty users.
+	// --------------------------------------------------
+
+	var authenticatedFacultyID uint
+
+	if role == "faculty" {
+
+		facultyIDValue, exists :=
+			c.Get("faculty_id")
+
+		if !exists {
+			response.Error(
+				c,
+				http.StatusUnauthorized,
+				"Authenticated faculty ID not found",
+			)
+			return
+		}
+
+		facultyID, ok :=
+			facultyIDValue.(uint)
+
+		if !ok || facultyID == 0 {
+			response.Error(
+				c,
+				http.StatusUnauthorized,
+				"Invalid authenticated faculty ID",
+			)
+			return
+		}
+
+		authenticatedFacultyID =
+			facultyID
+	}
+
+	// --------------------------------------------------
+	// Mark attendance
+	// --------------------------------------------------
+
+	attendance, err :=
+		h.service.MarkAttendance(
+			req,
+			role,
+			authenticatedFacultyID,
+		)
+
 	if err != nil {
+
+		// Faculty is trying to use another faculty's subject.
+		if errors.Is(
+			err,
+			ErrUnauthorizedSubject,
+		) {
+			response.Error(
+				c,
+				http.StatusForbidden,
+				"You are not assigned to this subject",
+			)
+			return
+		}
+
 		response.Error(
 			c,
 			http.StatusInternalServerError,
-			"Failed to mark attendance",
+			err.Error(),
 		)
 		return
 	}
@@ -51,6 +128,7 @@ func (h *Handler) MarkAttendance(c *gin.Context) {
 func (h *Handler) GetAttendance(c *gin.Context) {
 
 	records, err := h.service.GetAttendance()
+
 	if err != nil {
 		response.Error(
 			c,
@@ -70,7 +148,13 @@ func (h *Handler) GetAttendance(c *gin.Context) {
 // UpdateAttendance handles updating an attendance record.
 func (h *Handler) UpdateAttendance(c *gin.Context) {
 
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err :=
+		strconv.ParseUint(
+			c.Param("id"),
+			10,
+			32,
+		)
+
 	if err != nil {
 		response.Error(
 			c,
@@ -90,10 +174,11 @@ func (h *Handler) UpdateAttendance(c *gin.Context) {
 		return
 	}
 
-	attendance, err := h.service.UpdateAttendance(
-		uint(id),
-		req,
-	)
+	attendance, err :=
+		h.service.UpdateAttendance(
+			uint(id),
+			req,
+		)
 
 	if err != nil {
 		response.Error(
@@ -114,7 +199,13 @@ func (h *Handler) UpdateAttendance(c *gin.Context) {
 // DeleteAttendance handles deleting an attendance record.
 func (h *Handler) DeleteAttendance(c *gin.Context) {
 
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err :=
+		strconv.ParseUint(
+			c.Param("id"),
+			10,
+			32,
+		)
+
 	if err != nil {
 		response.Error(
 			c,
@@ -124,7 +215,11 @@ func (h *Handler) DeleteAttendance(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.DeleteAttendance(uint(id)); err != nil {
+	if err :=
+		h.service.DeleteAttendance(
+			uint(id),
+		); err != nil {
+
 		response.Error(
 			c,
 			http.StatusNotFound,
@@ -143,11 +238,12 @@ func (h *Handler) DeleteAttendance(c *gin.Context) {
 // GetAttendanceHistory returns attendance history for a student.
 func (h *Handler) GetAttendanceHistory(c *gin.Context) {
 
-	studentID, err := strconv.ParseUint(
-		c.Param("student_id"),
-		10,
-		32,
-	)
+	studentID, err :=
+		strconv.ParseUint(
+			c.Param("student_id"),
+			10,
+			32,
+		)
 
 	if err != nil {
 		response.Error(
@@ -158,9 +254,10 @@ func (h *Handler) GetAttendanceHistory(c *gin.Context) {
 		return
 	}
 
-	records, err := h.service.GetAttendanceHistory(
-		uint(studentID),
-	)
+	records, err :=
+		h.service.GetAttendanceHistory(
+			uint(studentID),
+		)
 
 	if err != nil {
 		response.Error(
@@ -181,11 +278,12 @@ func (h *Handler) GetAttendanceHistory(c *gin.Context) {
 // GetAttendancePercentage returns attendance percentage for a student.
 func (h *Handler) GetAttendancePercentage(c *gin.Context) {
 
-	studentID, err := strconv.ParseUint(
-		c.Param("student_id"),
-		10,
-		32,
-	)
+	studentID, err :=
+		strconv.ParseUint(
+			c.Param("student_id"),
+			10,
+			32,
+		)
 
 	if err != nil {
 		response.Error(
@@ -196,9 +294,10 @@ func (h *Handler) GetAttendancePercentage(c *gin.Context) {
 		return
 	}
 
-	percentage, err := h.service.GetAttendancePercentage(
-		uint(studentID),
-	)
+	percentage, err :=
+		h.service.GetAttendancePercentage(
+			uint(studentID),
+		)
 
 	if err != nil {
 		response.Error(
@@ -213,7 +312,7 @@ func (h *Handler) GetAttendancePercentage(c *gin.Context) {
 		c,
 		"Attendance percentage calculated successfully",
 		gin.H{
-			"student_id":        studentID,
+			"student_id":         studentID,
 			"attendance_percent": percentage,
 		},
 	)

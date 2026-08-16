@@ -8,6 +8,7 @@ import (
 	"github.com/Quant-Crafters/SMART-ATTANDANCE-TRACKER-AND-ANALYSIS/internal/auth"
 	"github.com/Quant-Crafters/SMART-ATTANDANCE-TRACKER-AND-ANALYSIS/internal/department"
 	"github.com/Quant-Crafters/SMART-ATTANDANCE-TRACKER-AND-ANALYSIS/internal/faculty"
+	"github.com/Quant-Crafters/SMART-ATTANDANCE-TRACKER-AND-ANALYSIS/internal/faculty_subject"
 	"github.com/Quant-Crafters/SMART-ATTANDANCE-TRACKER-AND-ANALYSIS/internal/student"
 	"github.com/Quant-Crafters/SMART-ATTANDANCE-TRACKER-AND-ANALYSIS/internal/subject"
 )
@@ -20,6 +21,7 @@ func Migrate() {
 		&faculty.Faculty{},
 		&department.Department{},
 		&subject.Subject{},
+		&faculty_subject.FacultySubject{},
 		&attendence.Attendance{},
 	)
 

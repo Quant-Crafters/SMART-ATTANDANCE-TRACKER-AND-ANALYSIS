@@ -28,4 +28,7 @@ func SetupRouter(router *gin.Engine) {
 
 	// Reports
 	RegisterReportRoutes(router)
+
+	// Faculty-Subject Assignments
+	RegisterFacultySubjectRoutes(router)
 }

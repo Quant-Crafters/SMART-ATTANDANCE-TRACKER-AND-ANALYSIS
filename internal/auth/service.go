@@ -145,3 +145,60 @@ func (s *Service) Register(req RegisterRequest) (*User, error) {
 
 	return user, nil
 }
+// CreateFacultyUser creates an authentication account for an existing faculty.
+func (s *Service) CreateFacultyUser(
+	name string,
+	email string,
+	plainPassword string,
+) (*User, error) {
+
+	name = strings.TrimSpace(name)
+	email = strings.ToLower(strings.TrimSpace(email))
+	plainPassword = strings.TrimSpace(plainPassword)
+
+	if name == "" {
+		return nil, errors.New("name is required")
+	}
+
+	if email == "" {
+		return nil, errors.New("email is required")
+	}
+
+	if plainPassword == "" {
+		return nil, errors.New("password is required")
+	}
+
+	if len(plainPassword) < 6 {
+		return nil, errors.New("password must be at least 6 characters")
+	}
+
+	// Do not create a duplicate login account.
+	existing, err := s.repo.FindByEmail(email)
+	if err == nil && existing != nil {
+		return nil, errors.New("user with this email already exists")
+	}
+
+	// Hash password using the existing project password package.
+	hashedPassword, err :=
+		password.HashPassword(plainPassword)
+
+	if err != nil {
+		return nil, errors.New("failed to hash password")
+	}
+
+	user := &User{
+		Name:     name,
+		Email:    email,
+		Password: hashedPassword,
+		Role:     "faculty",
+	}
+
+	if err := s.repo.Create(user); err != nil {
+		return nil, err
+	}
+
+	// Never return the password.
+	user.Password = ""
+
+	return user, nil
+}

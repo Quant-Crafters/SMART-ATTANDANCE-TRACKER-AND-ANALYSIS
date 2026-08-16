@@ -87,3 +87,43 @@ func (h *Handler) Register(c *gin.Context) {
 		user,
 	)
 }
+// CreateFacultyUser handles creation of a faculty login account.
+// This endpoint is intended for admin use.
+func (h *Handler) CreateFacultyUser(c *gin.Context) {
+
+	var req struct {
+		Name     string `json:"name" binding:"required"`
+		Email    string `json:"email" binding:"required,email"`
+		Password string `json:"password" binding:"required,min=6"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(
+			c,
+			http.StatusBadRequest,
+			"Invalid faculty account data",
+		)
+		return
+	}
+
+	user, err := h.service.CreateFacultyUser(
+		req.Name,
+		req.Email,
+		req.Password,
+	)
+
+	if err != nil {
+		response.Error(
+			c,
+			http.StatusBadRequest,
+			err.Error(),
+		)
+		return
+	}
+
+	response.Created(
+		c,
+		"Faculty login account created successfully",
+		user,
+	)
+}
