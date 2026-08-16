@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -21,6 +21,12 @@ import {
 } from "lucide-react";
 
 import { getDashboardAnalytics } from "../api/analytics.api";
+import { getStudents } from "../api/student.api";
+import { getAttendance } from "../api/attendance.api";
+
+/* =========================================================
+   SIDEBAR
+========================================================= */
 
 const sidebarItems = [
   {
@@ -50,76 +56,122 @@ const sidebarItems = [
   },
 ];
 
-const attendanceData = [
-  {
-    name: "A. Khan",
-    method: "via FaceID",
-    time: "10:15 AM",
-    status: "Present",
-  },
-  {
-    name: "A. Sharma",
-    method: "Location Mismatch",
-    time: "10:16 AM",
-    status: "Absent Alert",
-  },
-  {
-    name: "D. Sharma",
-    method: "via QR Scan",
-    time: "10:18 AM",
-    status: "Present",
-  },
-];
+/* =========================================================
+   DATE HELPERS
+========================================================= */
 
-const calendarDays = [
-  { day: 1, type: "red" },
-  { day: 2, type: "red" },
-  { day: 3, type: "green" },
-  { day: 4, type: "green" },
-  { day: 5, type: "orange" },
-  { day: 6, type: "orange" },
-  { day: 7, type: "red" },
-  { day: 8, type: "green" },
-  { day: 9, type: "green" },
-  { day: 10, type: "orange" },
-  { day: 11, type: "orange" },
-  { day: 12, type: "red" },
-  { day: 13, type: "green" },
-  { day: 14, type: "green" },
-  { day: 15, type: "blue" },
-  { day: 16, type: "orange" },
-  { day: 17, type: "orange" },
-  { day: 18, type: "red" },
-  { day: 19, type: "green" },
-  { day: 20, type: "green" },
-];
+function getDateKey(value) {
+  if (!value) return null;
 
-const chartData = [
-  { label: "9 AM", value: 87 },
-  { label: "10 AM", value: 96 },
-  { label: "11 AM", value: 99 },
-  { label: "12 PM", value: 95 },
-  { label: "1 PM", value: 83 },
-  { label: "2 PM", value: 91 },
-  { label: "3 PM", value: 99 },
-  { label: "4 PM", value: 94 },
-];
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function getTodayKey() {
+  return getDateKey(new Date());
+}
+
+function formatAttendanceTime(value) {
+  if (!value) return "—";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  return date.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function getInitials(name) {
+  if (!name) return "?";
+
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
+function formatStatus(status) {
+  if (!status) return "Unknown";
+
+  return (
+    status.charAt(0).toUpperCase() +
+    status.slice(1).toLowerCase()
+  );
+}
+
+/* =========================================================
+   REACT BITS STYLE AURORA
+========================================================= */
+
+function AuroraBackground() {
+  return (
+    <div
+      className="aurora-background"
+      aria-hidden="true"
+    >
+      <div className="aurora-blob aurora-green" />
+      <div className="aurora-blob aurora-blue" />
+      <div className="aurora-blob aurora-purple" />
+      <div className="aurora-blob aurora-white" />
+
+      <div className="aurora-noise" />
+      <div className="aurora-dark-overlay" />
+    </div>
+  );
+}
+
+/* =========================================================
+   GLASS ICON BUTTON
+========================================================= */
 
 function IconButton({ children }) {
   return (
-    <button className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-[#151820] text-gray-400 transition hover:border-blue-500/40 hover:text-white">
+    <button
+      type="button"
+      className="glass-button flex h-10 w-10 items-center justify-center rounded-xl text-gray-400 hover:text-white"
+    >
       {children}
     </button>
   );
 }
 
-function StatCard({ title, value, subtitle, valueClass = "text-white" }) {
+/* =========================================================
+   STAT CARD
+========================================================= */
+
+function StatCard({
+  title,
+  value,
+  subtitle,
+  valueClass = "text-white",
+}) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#11141b] p-5 shadow-[0_8px_30px_rgba(0,0,0,0.2)]">
-      <p className="text-sm font-medium text-gray-500">{title}</p>
+    <div className="rounded-2xl border border-white/[0.10] bg-[#111018]/70 p-5 shadow-[0_8px_35px_rgba(0,0,0,0.22)] backdrop-blur-xl transition duration-300 hover:border-white/[0.18] hover:bg-[#15131d]/75">
+      <p className="text-sm font-medium text-gray-500">
+        {title}
+      </p>
 
       <div className="mt-3 flex items-end justify-between">
-        <h2 className={`text-3xl font-semibold tracking-tight ${valueClass}`}>
+        <h2
+          className={`text-3xl font-semibold tracking-tight ${valueClass}`}
+        >
           {value}
         </h2>
 
@@ -133,21 +185,28 @@ function StatCard({ title, value, subtitle, valueClass = "text-white" }) {
   );
 }
 
+/* =========================================================
+   ATTENDANCE STREAM
+========================================================= */
+
 function AttendanceRow({ student }) {
-  const present = student.status === "Present";
+  const status = String(
+    student.status || "unknown"
+  ).toLowerCase();
+
+  const present = status === "present";
+  const absent = status === "absent";
+  const late = status === "late";
 
   return (
-    <div className="flex items-center justify-between rounded-xl bg-[#171a22] px-4 py-3">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#252a35] text-sm font-medium text-gray-300">
-          {student.name
-            .split(" ")
-            .map((part) => part[0])
-            .join("")}
+    <div className="flex items-center justify-between rounded-xl border border-white/[0.04] bg-white/[0.035] px-4 py-3 backdrop-blur-sm transition hover:border-white/[0.10] hover:bg-white/[0.065]">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-white/[0.08] to-purple-500/[0.10] text-sm font-medium text-gray-300 ring-1 ring-white/[0.06]">
+          {getInitials(student.name)}
         </div>
 
-        <div>
-          <p className="text-sm font-medium text-gray-200">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-gray-200">
             {student.name}
           </p>
 
@@ -157,13 +216,19 @@ function AttendanceRow({ student }) {
         </div>
       </div>
 
-      <div className="text-right">
+      <div className="ml-3 text-right">
         <p
           className={`text-xs font-semibold ${
-            present ? "text-green-400" : "text-red-400"
+            present
+              ? "text-[#7cff67]"
+              : absent
+              ? "text-red-400"
+              : late
+              ? "text-orange-400"
+              : "text-gray-400"
           }`}
         >
-          {student.status}
+          {formatStatus(status)}
         </p>
 
         <p className="mt-1 text-[11px] text-gray-600">
@@ -174,9 +239,133 @@ function AttendanceRow({ student }) {
   );
 }
 
-function AttendanceCalendar() {
+/* =========================================================
+   ATTENDANCE CALENDAR
+========================================================= */
+
+function AttendanceCalendar({
+  attendanceRecords,
+  currentDate,
+  setCurrentDate,
+}) {
+  const calendarData = useMemo(() => {
+    const grouped = {};
+
+    attendanceRecords.forEach((record) => {
+      const dateKey = getDateKey(record.date);
+
+      if (!dateKey) return;
+
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = {
+          total: 0,
+          present: 0,
+          absent: 0,
+          late: 0,
+        };
+      }
+
+      grouped[dateKey].total += 1;
+
+      const status = String(
+        record.status || ""
+      ).toLowerCase();
+
+      if (status === "present") {
+        grouped[dateKey].present += 1;
+      }
+
+      if (status === "absent") {
+        grouped[dateKey].absent += 1;
+      }
+
+      if (status === "late") {
+        grouped[dateKey].late += 1;
+      }
+    });
+
+    return grouped;
+  }, [attendanceRecords]);
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  const firstDay = new Date(year, month, 1);
+
+  const daysInMonth = new Date(
+    year,
+    month + 1,
+    0
+  ).getDate();
+
+  const firstDayOffset =
+    (firstDay.getDay() + 6) % 7;
+
+  const days = [];
+
+  for (let i = 0; i < firstDayOffset; i += 1) {
+    days.push(null);
+  }
+
+  for (
+    let day = 1;
+    day <= daysInMonth;
+    day += 1
+  ) {
+    days.push(new Date(year, month, day));
+  }
+
+  const monthLabel =
+    currentDate.toLocaleDateString([], {
+      month: "long",
+      year: "numeric",
+    });
+
+  const todayKey = getTodayKey();
+
+  const previousMonth = () => {
+    setCurrentDate(
+      new Date(year, month - 1, 1)
+    );
+  };
+
+  const nextMonth = () => {
+    setCurrentDate(
+      new Date(year, month + 1, 1)
+    );
+  };
+
+  const getDayClasses = (date) => {
+    if (!date) return "";
+
+    const key = getDateKey(date);
+
+    if (key === todayKey) {
+      return "bg-[#5227ff] text-white shadow-[0_0_15px_rgba(82,39,255,0.35)]";
+    }
+
+    const data = calendarData[key];
+
+    if (!data || data.total === 0) {
+      return "bg-white/[0.035] text-gray-500";
+    }
+
+    const attendanceRate =
+      (data.present / data.total) * 100;
+
+    if (attendanceRate >= 75) {
+      return "bg-[#7cff67]/15 text-[#7cff67]";
+    }
+
+    if (attendanceRate >= 50) {
+      return "bg-orange-500/15 text-orange-400";
+    }
+
+    return "bg-red-500/15 text-red-400";
+  };
+
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#11141b] p-5">
+    <div className="rounded-2xl border border-white/[0.10] bg-[#111018]/70 p-5 shadow-[0_8px_35px_rgba(0,0,0,0.22)] backdrop-blur-xl">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-base font-semibold text-white">
@@ -184,15 +373,41 @@ function AttendanceCalendar() {
           </h3>
 
           <p className="mt-1 text-xs text-gray-500">
-            August 2026
+            {monthLabel}
           </p>
         </div>
 
-        <CalendarDays className="h-5 w-5 text-gray-500" />
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={previousMonth}
+            className="glass-button rounded-lg px-2 py-1 text-gray-500 hover:text-white"
+          >
+            ‹
+          </button>
+
+          <CalendarDays className="h-5 w-5 text-purple-300" />
+
+          <button
+            type="button"
+            onClick={nextMonth}
+            className="glass-button rounded-lg px-2 py-1 text-gray-500 hover:text-white"
+          >
+            ›
+          </button>
+        </div>
       </div>
 
       <div className="mt-6 grid grid-cols-7 gap-2 text-center">
-        {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((day) => (
+        {[
+          "Mo",
+          "Tu",
+          "We",
+          "Th",
+          "Fr",
+          "Sa",
+          "Su",
+        ].map((day) => (
           <span
             key={day}
             className="text-[10px] font-medium text-gray-600"
@@ -201,20 +416,42 @@ function AttendanceCalendar() {
           </span>
         ))}
 
-        {calendarDays.map((item) => {
-          const colorMap = {
-            green: "bg-green-500/20 text-green-400",
-            red: "bg-red-500/20 text-red-400",
-            orange: "bg-orange-500/20 text-orange-400",
-            blue: "bg-blue-500 text-white",
-          };
+        {days.map((date, index) => {
+          if (!date) {
+            return (
+              <div
+                key={`empty-${index}`}
+                className="h-8 w-8"
+              />
+            );
+          }
+
+          const key = getDateKey(date);
+          const data = calendarData[key];
+
+          let tooltip =
+            "No attendance records";
+
+          if (data) {
+            const rate =
+              data.total > 0
+                ? Math.round(
+                    (data.present / data.total) * 100
+                  )
+                : 0;
+
+            tooltip = `${data.present} present / ${data.total} records (${rate}%)`;
+          }
 
           return (
             <div
-              key={item.day}
-              className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium ${colorMap[item.type]}`}
+              key={key}
+              title={tooltip}
+              className={`mx-auto flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium transition ${getDayClasses(
+                date
+              )}`}
             >
-              {item.day}
+              {date.getDate()}
             </div>
           );
         })}
@@ -222,7 +459,7 @@ function AttendanceCalendar() {
 
       <div className="mt-6 flex flex-wrap gap-4 text-[10px] text-gray-500">
         <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-green-500" />
+          <span className="h-2 w-2 rounded-full bg-[#7cff67]" />
           Good
         </span>
 
@@ -235,14 +472,109 @@ function AttendanceCalendar() {
           <span className="h-2 w-2 rounded-full bg-red-500" />
           Low
         </span>
+
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-[#5227ff]" />
+          Today
+        </span>
       </div>
     </div>
   );
 }
 
-function AttendanceChart() {
+/* =========================================================
+   ATTENDANCE CHART
+========================================================= */
+
+function AttendanceChart({ attendanceRecords }) {
+  const chartData = useMemo(() => {
+    const todayKey = getTodayKey();
+
+    const todayRecords =
+      attendanceRecords.filter(
+        (record) =>
+          getDateKey(record.date) === todayKey
+      );
+
+    const grouped = {};
+
+    todayRecords.forEach((record) => {
+      const date = new Date(record.date);
+
+      if (Number.isNaN(date.getTime())) {
+        return;
+      }
+
+      const hour = date.getHours();
+
+      if (!grouped[hour]) {
+        grouped[hour] = {
+          hour,
+          total: 0,
+          present: 0,
+          absent: 0,
+          late: 0,
+        };
+      }
+
+      grouped[hour].total += 1;
+
+      const status = String(
+        record.status || ""
+      ).toLowerCase();
+
+      if (status === "present") {
+        grouped[hour].present += 1;
+      }
+
+      if (status === "absent") {
+        grouped[hour].absent += 1;
+      }
+
+      if (status === "late") {
+        grouped[hour].late += 1;
+      }
+    });
+
+    return Object.values(grouped)
+      .sort((a, b) => a.hour - b.hour)
+      .map((item) => ({
+        ...item,
+        value:
+          item.total > 0
+            ? Math.round(
+                (item.present / item.total) * 100
+              )
+            : 0,
+      }));
+  }, [attendanceRecords]);
+
+  const todayRate = useMemo(() => {
+    const todayKey = getTodayKey();
+
+    const todayRecords =
+      attendanceRecords.filter(
+        (record) =>
+          getDateKey(record.date) === todayKey
+      );
+
+    if (todayRecords.length === 0) {
+      return 0;
+    }
+
+    const present = todayRecords.filter(
+      (record) =>
+        String(record.status).toLowerCase() ===
+        "present"
+    ).length;
+
+    return Math.round(
+      (present / todayRecords.length) * 100
+    );
+  }, [attendanceRecords]);
+
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#11141b] p-5">
+    <div className="rounded-2xl border border-white/[0.10] bg-[#111018]/70 p-5 shadow-[0_8px_35px_rgba(0,0,0,0.22)] backdrop-blur-xl">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-base font-semibold text-white">
@@ -250,50 +582,78 @@ function AttendanceChart() {
           </h3>
 
           <p className="mt-1 text-xs text-gray-500">
-            Today's attendance trend
+            Today&apos;s attendance trend
           </p>
         </div>
 
-        <span className="rounded-lg bg-blue-500/10 px-3 py-1.5 text-xs font-semibold text-blue-400">
-          Aug 15 · 94%
+        <span className="rounded-lg bg-purple-500/10 px-3 py-1.5 text-xs font-semibold text-purple-300">
+          Today · {todayRate}%
         </span>
       </div>
 
       <div className="mt-6">
         <div className="relative h-52">
           <div className="absolute inset-0 flex flex-col justify-between">
-            {[100, 75, 50, 25, 0].map((value) => (
-              <div
-                key={value}
-                className="flex items-center gap-3"
-              >
-                <span className="w-8 text-[10px] text-gray-600">
-                  {value}%
-                </span>
+            {[100, 75, 50, 25, 0].map(
+              (value) => (
+                <div
+                  key={value}
+                  className="flex items-center gap-3"
+                >
+                  <span className="w-8 text-[10px] text-gray-600">
+                    {value}%
+                  </span>
 
-                <div className="h-px flex-1 bg-white/5" />
-              </div>
-            ))}
+                  <div className="h-px flex-1 bg-white/5" />
+                </div>
+              )
+            )}
           </div>
 
           <div className="absolute inset-x-11 bottom-0 top-0 flex items-end justify-between gap-2">
-            {chartData.map((item) => (
-              <div
-                key={item.label}
-                className="flex h-full flex-1 flex-col items-center justify-end"
-              >
-                <div
-                  className="w-full max-w-8 rounded-t-md bg-blue-500/70 transition hover:bg-blue-400"
-                  style={{
-                    height: `${item.value * 0.78}%`,
-                  }}
-                />
-
-                <span className="mt-3 text-[9px] text-gray-600">
-                  {item.label}
-                </span>
+            {chartData.length === 0 ? (
+              <div className="flex h-full w-full items-center justify-center text-xs text-gray-600">
+                No attendance records for today.
               </div>
-            ))}
+            ) : (
+              chartData.map((item) => {
+                const hourLabel =
+                  new Date(
+                    2000,
+                    0,
+                    1,
+                    item.hour
+                  ).toLocaleTimeString([], {
+                    hour: "numeric",
+                  });
+
+                return (
+                  <div
+                    key={item.hour}
+                    className="flex h-full flex-1 flex-col items-center justify-end"
+                    title={`${hourLabel}: ${item.present} present / ${item.total} records`}
+                  >
+                    <span className="mb-1 text-[9px] text-gray-500">
+                      {item.value}%
+                    </span>
+
+                    <div
+                      className="w-full max-w-8 rounded-t-md bg-gradient-to-t from-[#5227ff]/70 to-[#b497cf] transition-all duration-500 hover:from-[#5227ff] hover:to-[#7cff67]"
+                      style={{
+                        height: `${Math.max(
+                          item.value * 0.78,
+                          item.value > 0 ? 4 : 0
+                        )}%`,
+                      }}
+                    />
+
+                    <span className="mt-3 text-[9px] text-gray-600">
+                      {hourLabel}
+                    </span>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
@@ -301,44 +661,285 @@ function AttendanceChart() {
   );
 }
 
+/* =========================================================
+   DASHBOARD
+========================================================= */
+
 export default function Dashboard() {
   const navigate = useNavigate();
 
   const [analytics, setAnalytics] = useState(null);
+
+  const [attendanceRecords, setAttendanceRecords] =
+    useState([]);
+
+  const [students, setStudents] = useState([]);
+
   const [loading, setLoading] = useState(true);
+
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      try {
-        const response = await getDashboardAnalytics();
+  const [currentDate, setCurrentDate] =
+    useState(new Date());
 
-        if (response.success) {
-          setAnalytics(response.data);
-        } else {
-          setError("Failed to load dashboard analytics.");
-        }
-      } catch (err) {
-        console.error("Dashboard analytics error:", err);
-        setError("Failed to load dashboard analytics.");
-      } finally {
-        setLoading(false);
+  /* =======================================================
+     FETCH DASHBOARD DATA
+  ======================================================= */
+
+  const fetchDashboardData = async () => {
+    try {
+      setError("");
+
+      const [
+        analyticsResponse,
+        attendanceResponse,
+        studentsResponse,
+      ] = await Promise.all([
+        getDashboardAnalytics(),
+        getAttendance(),
+        getStudents(),
+      ]);
+
+      const analyticsData =
+        analyticsResponse?.data ??
+        analyticsResponse;
+
+      const attendanceData =
+        attendanceResponse?.data ??
+        attendanceResponse;
+
+      const studentsData =
+        studentsResponse?.data ??
+        studentsResponse;
+
+      if (
+        analyticsResponse?.success === false
+      ) {
+        throw new Error(
+          analyticsResponse.message ||
+            "Failed to load dashboard analytics."
+        );
       }
-    };
 
-    fetchAnalytics();
+      if (
+        attendanceResponse?.success === false
+      ) {
+        throw new Error(
+          attendanceResponse.message ||
+            "Failed to load attendance records."
+        );
+      }
+
+      if (
+        studentsResponse?.success === false
+      ) {
+        throw new Error(
+          studentsResponse.message ||
+            "Failed to load students."
+        );
+      }
+
+      setAnalytics(analyticsData);
+
+      setAttendanceRecords(
+        Array.isArray(attendanceData)
+          ? attendanceData
+          : []
+      );
+
+      setStudents(
+        Array.isArray(studentsData)
+          ? studentsData
+          : []
+      );
+    } catch (err) {
+      console.error(
+        "Dashboard data error:",
+        err
+      );
+
+      const backendMessage =
+        err?.response?.data?.message;
+
+      setError(
+        backendMessage ||
+          err?.message ||
+          "Failed to load dashboard data."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* =======================================================
+     INITIAL LOAD + AUTO REFRESH
+  ======================================================= */
+
+  useEffect(() => {
+    fetchDashboardData();
+
+    const interval = setInterval(() => {
+      fetchDashboardData();
+    }, 30000);
+
+    return () => {
+      clearInterval(interval);
+    };
   }, []);
 
+  /* =======================================================
+     STUDENT MAP
+  ======================================================= */
+
+  const studentMap = useMemo(() => {
+    const map = {};
+
+    students.forEach((student) => {
+      map[String(student.id)] = student;
+    });
+
+    return map;
+  }, [students]);
+
+  /* =======================================================
+     ATTENDANCE STREAM
+  ======================================================= */
+
+  const attendanceStream = useMemo(() => {
+    return [...attendanceRecords]
+      .sort((a, b) => {
+        const dateA = new Date(
+          a.date
+        ).getTime();
+
+        const dateB = new Date(
+          b.date
+        ).getTime();
+
+        return dateB - dateA;
+      })
+      .slice(0, 5)
+      .map((record) => {
+        const student =
+          studentMap[
+            String(record.student_id)
+          ];
+
+        const studentName =
+          student?.name ||
+          `Student #${record.student_id}`;
+
+        let method = "Attendance Record";
+
+        if (record.subject_id) {
+          method = `Subject #${record.subject_id}`;
+        }
+
+        return {
+          id: record.id,
+          name: studentName,
+          method,
+          time: formatAttendanceTime(
+            record.date
+          ),
+          status: formatStatus(
+            record.status
+          ),
+        };
+      });
+  }, [
+    attendanceRecords,
+    studentMap,
+  ]);
+
+  /* =======================================================
+     TODAY'S STATS
+  ======================================================= */
+
+  const todayStats = useMemo(() => {
+    const todayKey = getTodayKey();
+
+    const todayRecords =
+      attendanceRecords.filter(
+        (record) =>
+          getDateKey(record.date) ===
+          todayKey
+      );
+
+    const present =
+      todayRecords.filter(
+        (record) =>
+          String(
+            record.status
+          ).toLowerCase() ===
+          "present"
+      ).length;
+
+    const absent =
+      todayRecords.filter(
+        (record) =>
+          String(
+            record.status
+          ).toLowerCase() ===
+          "absent"
+      ).length;
+
+    const late =
+      todayRecords.filter(
+        (record) =>
+          String(
+            record.status
+          ).toLowerCase() ===
+          "late"
+      ).length;
+
+    const total =
+      todayRecords.length;
+
+    const rate =
+      total > 0
+        ? Math.round(
+            (present / total) * 100
+          )
+        : 0;
+
+    return {
+      total,
+      present,
+      absent,
+      late,
+      rate,
+    };
+  }, [attendanceRecords]);
+
+  /* =========================================================
+     RENDER
+  ========================================================= */
+
   return (
-    <div className="min-h-screen bg-[#0b0d12] text-white">
-      <div className="flex min-h-screen">
+    <div className="relative min-h-screen overflow-hidden bg-[#0b0910] text-white">
+      {/* =====================================================
+          REAL ANIMATED AURORA
+      ===================================================== */}
 
-        {/* SIDEBAR */}
-        <aside className="hidden w-64 shrink-0 border-r border-white/10 bg-[#090b0f] lg:flex lg:flex-col">
+      <AuroraBackground />
 
-          {/* Logo */}
-          <div className="flex h-20 items-center gap-3 border-b border-white/5 px-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400">
+      {/* =====================================================
+          DASHBOARD CONTENT
+      ===================================================== */}
+
+      <div className="relative z-10 flex min-h-screen">
+
+        {/* =================================================
+            GLASS SIDEBAR
+        ================================================= */}
+
+        <aside className="glass-sidebar hidden w-64 shrink-0 lg:flex lg:flex-col">
+
+          {/* SIDEBAR BRAND */}
+
+          <div className="relative flex h-20 items-center gap-3 border-b border-white/[0.06] px-6">
+            <div className="glass-logo flex h-10 w-10 items-center justify-center rounded-xl text-purple-300">
               <ScanFace className="h-5 w-5" />
             </div>
 
@@ -347,63 +948,112 @@ export default function Dashboard() {
                 Smart
               </h1>
 
-              <p className="text-sm font-bold text-blue-400">
+              <p className="text-sm font-bold text-purple-300">
                 Attendance
               </p>
             </div>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 space-y-2 px-3 py-6">
+          {/* SIDEBAR NAVIGATION */}
+
+          <nav className="relative z-10 flex-1 space-y-2 px-3 py-6">
             {sidebarItems.map((item) => {
               const Icon = item.icon;
 
               return (
                 <button
+                  type="button"
                   key={item.label}
                   onClick={() => {
-                    if (item.label === "Students") {
+                    if (
+                      item.label ===
+                      "Students"
+                    ) {
                       navigate("/students");
                     }
 
-                    if (item.label === "Faculty") {
+                    if (
+                      item.label ===
+                      "Faculty"
+                    ) {
                       navigate("/faculty");
                     }
+
+                    if (
+                      item.label ===
+                      "Mark Attendance"
+                    ) {
+                      navigate(
+                        "/mark-attendance"
+                      );
+                    }
+
+                    if (
+                      item.label ===
+                      "Analytics"
+                    ) {
+                      navigate("/analytics");
+                    }
+
+                    if (
+                      item.label ===
+                      "Reports"
+                    ) {
+                      navigate("/reports");
+                    }
                   }}
-                  className={`group flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
+                  className={`group flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium ${
                     item.active
-                      ? "bg-blue-500/15 text-blue-400"
-                      : "text-gray-500 hover:bg-white/5 hover:text-gray-200"
+                      ? "glass-nav-item-active text-white"
+                      : "glass-nav-item text-gray-500"
                   }`}
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon
+                    className={`relative z-10 h-5 w-5 ${
+                      item.active
+                        ? "text-purple-300"
+                        : "transition-colors group-hover:text-purple-200"
+                    }`}
+                  />
 
-                  <span>{item.label}</span>
+                  <span className="relative z-10">
+                    {item.label}
+                  </span>
 
                   {item.active && (
-                    <span className="ml-auto h-2 w-2 rounded-full bg-blue-500" />
+                    <span className="relative z-10 ml-auto h-2 w-2 rounded-full bg-[#7cff67] shadow-[0_0_10px_rgba(124,255,103,0.8)]" />
                   )}
                 </button>
               );
             })}
           </nav>
 
-          {/* Settings */}
-          <div className="border-t border-white/5 p-3">
-            <button className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-500 transition hover:bg-white/5 hover:text-gray-200">
-              <Settings className="h-5 w-5" />
+          {/* SIDEBAR SETTINGS */}
+
+          <div className="relative z-10 border-t border-white/[0.06] p-3">
+            <button
+              type="button"
+              className="glass-nav-item flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-500"
+            >
+              <Settings className="h-5 w-5 transition-colors group-hover:text-purple-200" />
               Settings
             </button>
           </div>
         </aside>
 
-        {/* MAIN */}
+        {/* =================================================
+            MAIN
+        ================================================= */}
+
         <main className="min-w-0 flex-1">
 
-          {/* HEADER */}
-          <header className="flex h-20 items-center justify-between border-b border-white/10 bg-[#0b0d12] px-5 lg:px-8">
+          {/* =================================================
+              GLASS TOP BAR
+          ================================================= */}
 
-            <div>
+          <header className="glass-topbar flex h-20 items-center justify-between px-5 lg:px-8">
+
+            <div className="relative z-10">
               <h1 className="text-lg font-semibold tracking-tight text-white">
                 Automated Student Attendance & Analytics
               </h1>
@@ -413,10 +1063,11 @@ export default function Dashboard() {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="relative z-10 flex items-center gap-3">
 
-              {/* Search */}
-              <div className="hidden items-center gap-2 rounded-xl border border-white/10 bg-[#11141b] px-3 py-2 md:flex">
+              {/* SEARCH */}
+
+              <div className="glass-search hidden items-center gap-2 rounded-xl px-3 py-2 md:flex">
                 <Search className="h-4 w-4 text-gray-600" />
 
                 <input
@@ -426,13 +1077,19 @@ export default function Dashboard() {
                 />
               </div>
 
+              {/* NOTIFICATIONS */}
+
               <IconButton>
                 <Bell className="h-4 w-4" />
               </IconButton>
 
-              {/* Profile */}
-              <button className="flex items-center gap-2 rounded-xl border border-white/10 bg-[#11141b] px-2 py-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-xs font-bold">
+              {/* PROFILE */}
+
+              <button
+                type="button"
+                className="glass-profile flex items-center gap-2 rounded-xl px-2 py-2"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#5227ff] to-[#b497cf] text-xs font-bold shadow-[0_0_15px_rgba(82,39,255,0.22)]">
                   AS
                 </div>
 
@@ -451,16 +1108,24 @@ export default function Dashboard() {
             </div>
           </header>
 
-          {/* CONTENT */}
+          {/* =================================================
+              CONTENT
+          ================================================= */}
+
           <div className="p-5 lg:p-8">
 
+            {/* ERROR */}
+
             {error && (
-              <div className="mb-5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+              <div className="mb-5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400 backdrop-blur-md">
                 {error}
               </div>
             )}
 
-            {/* STATISTICS */}
+            {/* =================================================
+                STATISTICS
+            ================================================= */}
+
             <section className="grid gap-4 md:grid-cols-3">
 
               <StatCard
@@ -468,7 +1133,8 @@ export default function Dashboard() {
                 value={
                   loading
                     ? "..."
-                    : analytics?.total_students ?? 0
+                    : analytics?.total_students ??
+                      0
                 }
                 subtitle="All departments"
               />
@@ -478,27 +1144,37 @@ export default function Dashboard() {
                 value={
                   loading
                     ? "..."
-                    : `${analytics?.attendance_rate ?? 0}%`
+                    : `${todayStats.rate}%`
                 }
                 subtitle="Today"
-                valueClass="text-green-400"
+                valueClass="text-[#7cff67]"
               />
 
               <StatCard
-                title="Classes in Progress"
-                value="23"
-                subtitle="8 currently active"
+                title="Total Attendance Records"
+                value={
+                  loading
+                    ? "..."
+                    : analytics?.total_attendance ??
+                      0
+                }
+                subtitle="Database"
               />
 
             </section>
 
-            {/* MIDDLE SECTION */}
+            {/* =================================================
+                MIDDLE SECTION
+            ================================================= */}
+
             <section className="mt-5 grid gap-5 xl:grid-cols-[1.2fr_1fr_0.9fr]">
 
-              {/* Attendance stream */}
-              <div className="rounded-2xl border border-white/10 bg-[#11141b] p-5">
+              {/* ATTENDANCE STREAM */}
+
+              <div className="rounded-2xl border border-white/[0.10] bg-[#111018]/65 p-5 shadow-[0_8px_35px_rgba(0,0,0,0.22)] backdrop-blur-xl transition duration-300 hover:border-white/[0.16]">
 
                 <div className="flex items-center justify-between">
+
                   <div>
                     <h3 className="text-base font-semibold text-white">
                       Real-time Attendance Stream
@@ -509,25 +1185,41 @@ export default function Dashboard() {
                     </p>
                   </div>
 
-                  <span className="flex items-center gap-1.5 text-[10px] font-medium text-green-400">
-                    <span className="h-2 w-2 animate-pulse rounded-full bg-green-400" />
+                  <span className="flex items-center gap-1.5 text-[10px] font-medium text-[#7cff67]">
+
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-[#7cff67] shadow-[0_0_10px_rgba(124,255,103,0.8)]" />
+
                     LIVE
                   </span>
                 </div>
 
                 <div className="mt-5 space-y-3">
-                  {attendanceData.map((student) => (
-                    <AttendanceRow
-                      key={`${student.name}-${student.time}`}
-                      student={student}
-                    />
-                  ))}
-                </div>
 
+                  {loading ? (
+                    <div className="rounded-xl bg-white/[0.035] px-4 py-5 text-center text-xs text-gray-600">
+                      Loading attendance records...
+                    </div>
+                  ) : attendanceStream.length === 0 ? (
+                    <div className="rounded-xl bg-white/[0.035] px-4 py-5 text-center text-xs text-gray-600">
+                      No attendance records found.
+                    </div>
+                  ) : (
+                    attendanceStream.map(
+                      (student) => (
+                        <AttendanceRow
+                          key={student.id}
+                          student={student}
+                        />
+                      )
+                    )
+                  )}
+
+                </div>
               </div>
 
-              {/* Verification */}
-              <div className="rounded-2xl border border-white/10 bg-[#11141b] p-5">
+              {/* VERIFICATION */}
+
+              <div className="rounded-2xl border border-white/[0.10] bg-[#111018]/65 p-5 shadow-[0_8px_35px_rgba(0,0,0,0.22)] backdrop-blur-xl transition duration-300 hover:border-white/[0.16]">
 
                 <h3 className="text-base font-semibold text-white">
                   Focused 2-Step Verification Logic
@@ -539,7 +1231,8 @@ export default function Dashboard() {
 
                 <div className="mt-5 grid grid-cols-3 gap-2">
 
-                  <div className="rounded-xl bg-[#191c24] p-3 text-center">
+                  <div className="rounded-xl border border-white/[0.06] bg-white/[0.035] p-3 text-center backdrop-blur-sm transition hover:border-white/[0.12] hover:bg-white/[0.055]">
+
                     <ScanFace className="mx-auto h-5 w-5 text-gray-500" />
 
                     <p className="mt-3 text-[10px] text-gray-400">
@@ -547,28 +1240,31 @@ export default function Dashboard() {
                     </p>
                   </div>
 
-                  <div className="rounded-xl bg-blue-500/15 p-3 text-center ring-1 ring-blue-500/30">
-                    <QrCode className="mx-auto h-5 w-5 text-blue-400" />
+                  <div className="rounded-xl border border-purple-400/20 bg-purple-500/10 p-3 text-center backdrop-blur-sm transition hover:border-purple-400/30 hover:bg-purple-500/15">
 
-                    <p className="mt-3 text-[10px] text-blue-300">
+                    <QrCode className="mx-auto h-5 w-5 text-purple-300" />
+
+                    <p className="mt-3 text-[10px] text-purple-200">
                       2. QR Verification
                     </p>
                   </div>
 
-                  <div className="rounded-xl bg-green-500/10 p-3 text-center">
-                    <Database className="mx-auto h-5 w-5 text-green-400" />
+                  <div className="rounded-xl border border-[#7cff67]/10 bg-[#7cff67]/5 p-3 text-center backdrop-blur-sm transition hover:border-[#7cff67]/20 hover:bg-[#7cff67]/10">
 
-                    <p className="mt-3 text-[10px] text-green-400">
+                    <Database className="mx-auto h-5 w-5 text-[#7cff67]" />
+
+                    <p className="mt-3 text-[10px] text-[#7cff67]">
                       Database Updated
                     </p>
                   </div>
 
                 </div>
 
-                <div className="mt-5 rounded-xl border border-white/5 bg-[#0d0f14] p-4">
+                <div className="mt-5 rounded-xl border border-white/[0.06] bg-black/20 p-4 backdrop-blur-md">
 
                   <div className="flex items-center gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-green-400" />
+
+                    <CheckCircle2 className="h-5 w-5 text-[#7cff67]" />
 
                     <div>
                       <p className="text-xs font-medium text-white">
@@ -579,13 +1275,14 @@ export default function Dashboard() {
                         All systems operational
                       </p>
                     </div>
-                  </div>
 
+                  </div>
                 </div>
               </div>
 
-              {/* Admin actions */}
-              <div className="rounded-2xl border border-white/10 bg-[#11141b] p-5">
+              {/* ADMIN ACTIONS */}
+
+              <div className="rounded-2xl border border-white/[0.10] bg-[#111018]/65 p-5 shadow-[0_8px_35px_rgba(0,0,0,0.22)] backdrop-blur-xl transition duration-300 hover:border-white/[0.16]">
 
                 <h3 className="text-base font-semibold text-white">
                   Admin Actions
@@ -597,33 +1294,56 @@ export default function Dashboard() {
 
                 <div className="mt-5 space-y-3">
 
-                  <button className="flex w-full items-center justify-between rounded-xl bg-[#191c24] px-4 py-3 text-left text-sm font-medium text-blue-400 transition hover:bg-blue-500/10">
+                  <button
+                    type="button"
+                    className="glass-button flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-medium text-purple-300"
+                  >
                     Generate Class Report
                     <FileText className="h-4 w-4" />
                   </button>
 
-                  <button className="flex w-full items-center justify-between rounded-xl bg-[#191c24] px-4 py-3 text-left text-sm font-medium text-blue-400 transition hover:bg-blue-500/10">
+                  <button
+                    type="button"
+                    className="glass-button flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-medium text-purple-300"
+                  >
                     Contact At-Risk Students
                     <AlertTriangle className="h-4 w-4" />
                   </button>
 
-                  <button className="flex w-full items-center justify-between rounded-xl bg-[#191c24] px-4 py-3 text-left text-sm font-medium text-blue-400 transition hover:bg-blue-500/10">
+                  <button
+                    type="button"
+                    className="glass-button flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-medium text-purple-300"
+                  >
                     Classroom Allocation Map
                     <MapPin className="h-4 w-4" />
                   </button>
 
                 </div>
-
               </div>
 
             </section>
 
-            {/* BOTTOM SECTION */}
+            {/* =================================================
+                BOTTOM
+            ================================================= */}
+
             <section className="mt-5 grid gap-5 lg:grid-cols-[0.75fr_1.5fr]">
 
-              <AttendanceCalendar />
+              <AttendanceCalendar
+                attendanceRecords={
+                  attendanceRecords
+                }
+                currentDate={currentDate}
+                setCurrentDate={
+                  setCurrentDate
+                }
+              />
 
-              <AttendanceChart />
+              <AttendanceChart
+                attendanceRecords={
+                  attendanceRecords
+                }
+              />
 
             </section>
 

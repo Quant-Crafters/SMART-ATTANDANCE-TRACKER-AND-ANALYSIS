@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* =========================================================
+   GLOBAL
+========================================================= */
+
 html,
 body,
 #root {
@@ -8,12 +12,824 @@ body,
   width: 100%;
 }
 
+html {
+  background: #0b0910;
+}
+
 body {
-  background: #0b0d12;
+  background: #0b0910;
   color: white;
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  overflow-x: hidden;
 }
 
 * {
   box-sizing: border-box;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+::selection {
+  background: rgba(155, 92, 255, 0.35);
+  color: white;
+}
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0b0910;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(155, 92, 255, 0.22);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(155, 92, 255, 0.45);
+}
+
+/* =========================================================
+   REACT BITS STYLE AURORA
+========================================================= */
+
+.aurora-background {
+  position: fixed;
+  inset: 0;
+
+  z-index: 0;
+
+  overflow: hidden;
+
+  pointer-events: none;
+
+  background:
+    radial-gradient(
+      ellipse 70% 45% at 50% -8%,
+      rgba(255, 255, 255, 0.055),
+      transparent 72%
+    ),
+    #0b0910;
+}
+
+/* =========================================================
+   COMMON AURORA BLOB
+========================================================= */
+
+.aurora-blob {
+  position: absolute;
+
+  pointer-events: none;
+
+  border-radius: 9999px;
+
+  filter: blur(85px);
+
+  will-change: transform;
+
+  transform-origin: center;
+
+  mix-blend-mode: screen;
+}
+
+/* =========================================================
+   GREEN — LEFT
+========================================================= */
+
+.aurora-green {
+  width: 780px;
+  height: 520px;
+
+  left: -250px;
+  top: -230px;
+
+  background:
+    radial-gradient(
+      ellipse at center,
+      rgba(112, 255, 91, 0.92) 0%,
+      rgba(88, 224, 96, 0.70) 22%,
+      rgba(69, 179, 89, 0.42) 42%,
+      rgba(44, 121, 78, 0.18) 60%,
+      transparent 76%
+    );
+
+  animation:
+    auroraGreenMove
+    13s
+    cubic-bezier(0.45, 0, 0.55, 1)
+    infinite
+    alternate;
+}
+
+/* =========================================================
+   BLUE — RIGHT
+========================================================= */
+
+.aurora-blue {
+  width: 850px;
+  height: 560px;
+
+  right: -270px;
+  top: -240px;
+
+  background:
+    radial-gradient(
+      ellipse at center,
+      rgba(61, 112, 255, 0.92) 0%,
+      rgba(70, 82, 255, 0.72) 22%,
+      rgba(91, 55, 221, 0.52) 43%,
+      rgba(79, 44, 177, 0.25) 60%,
+      transparent 78%
+    );
+
+  animation:
+    auroraBlueMove
+    15s
+    cubic-bezier(0.45, 0, 0.55, 1)
+    infinite
+    alternate;
+}
+
+/* =========================================================
+   PURPLE — VIOLET MIX
+========================================================= */
+
+.aurora-purple {
+  width: 680px;
+  height: 430px;
+
+  right: 3%;
+  top: -160px;
+
+  background:
+    radial-gradient(
+      ellipse at center,
+      rgba(161, 85, 255, 0.72) 0%,
+      rgba(132, 61, 231, 0.50) 25%,
+      rgba(97, 49, 181, 0.25) 48%,
+      transparent 75%
+    );
+
+  animation:
+    auroraPurpleMove
+    18s
+    cubic-bezier(0.45, 0, 0.55, 1)
+    infinite
+    alternate;
+}
+
+/* =========================================================
+   WHITE — CENTER
+========================================================= */
+
+.aurora-white {
+  width: 760px;
+  height: 350px;
+
+  left: 26%;
+  top: -110px;
+
+  background:
+    radial-gradient(
+      ellipse at center,
+      rgba(255, 255, 255, 0.42) 0%,
+      rgba(230, 235, 242, 0.23) 22%,
+      rgba(201, 209, 222, 0.10) 42%,
+      transparent 72%
+    );
+
+  filter: blur(105px);
+
+  opacity: 0.65;
+
+  animation:
+    auroraWhiteMove
+    17s
+    cubic-bezier(0.45, 0, 0.55, 1)
+    infinite
+    alternate;
+}
+
+/* =========================================================
+   GREEN ANIMATION
+========================================================= */
+
+@keyframes auroraGreenMove {
+  0% {
+    transform:
+      translate3d(-5%, -3%, 0)
+      rotate(-5deg)
+      scale(1);
+  }
+
+  25% {
+    transform:
+      translate3d(3%, 5%, 0)
+      rotate(1deg)
+      scale(1.08);
+  }
+
+  50% {
+    transform:
+      translate3d(13%, 2%, 0)
+      rotate(6deg)
+      scale(1.14);
+  }
+
+  75% {
+    transform:
+      translate3d(18%, 10%, 0)
+      rotate(2deg)
+      scale(1.08);
+  }
+
+  100% {
+    transform:
+      translate3d(8%, 16%, 0)
+      rotate(-4deg)
+      scale(1.02);
+  }
+}
+
+/* =========================================================
+   BLUE ANIMATION
+========================================================= */
+
+@keyframes auroraBlueMove {
+  0% {
+    transform:
+      translate3d(5%, -4%, 0)
+      rotate(4deg)
+      scale(1);
+  }
+
+  25% {
+    transform:
+      translate3d(-4%, 3%, 0)
+      rotate(-2deg)
+      scale(1.08);
+  }
+
+  50% {
+    transform:
+      translate3d(-13%, 8%, 0)
+      rotate(-7deg)
+      scale(1.15);
+  }
+
+  75% {
+    transform:
+      translate3d(-18%, 2%, 0)
+      rotate(-3deg)
+      scale(1.09);
+  }
+
+  100% {
+    transform:
+      translate3d(-7%, -5%, 0)
+      rotate(5deg)
+      scale(1.02);
+  }
+}
+
+/* =========================================================
+   PURPLE ANIMATION
+========================================================= */
+
+@keyframes auroraPurpleMove {
+  0% {
+    transform:
+      translate3d(4%, -2%, 0)
+      rotate(-4deg)
+      scale(1);
+  }
+
+  30% {
+    transform:
+      translate3d(-5%, 4%, 0)
+      rotate(3deg)
+      scale(1.10);
+  }
+
+  60% {
+    transform:
+      translate3d(-12%, 10%, 0)
+      rotate(7deg)
+      scale(1.16);
+  }
+
+  100% {
+    transform:
+      translate3d(-2%, 5%, 0)
+      rotate(-2deg)
+      scale(1.04);
+  }
+}
+
+/* =========================================================
+   WHITE ANIMATION
+========================================================= */
+
+@keyframes auroraWhiteMove {
+  0% {
+    transform:
+      translate3d(-10%, 0, 0)
+      scale(0.92);
+
+    opacity: 0.38;
+  }
+
+  30% {
+    transform:
+      translate3d(2%, 8%, 0)
+      scale(1.05);
+
+    opacity: 0.55;
+  }
+
+  60% {
+    transform:
+      translate3d(12%, 4%, 0)
+      scale(1.15);
+
+    opacity: 0.72;
+  }
+
+  100% {
+    transform:
+      translate3d(20%, 13%, 0)
+      scale(1.03);
+
+    opacity: 0.45;
+  }
+}
+
+/* =========================================================
+   DARK OVERLAY
+========================================================= */
+
+.aurora-dark-overlay {
+  position: absolute;
+
+  inset: 0;
+
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(11, 9, 16, 0.04) 0%,
+      rgba(11, 9, 16, 0.22) 20%,
+      rgba(11, 9, 16, 0.70) 58%,
+      rgba(11, 9, 16, 0.96) 100%
+    );
+}
+
+/* =========================================================
+   SUBTLE TEXTURE
+========================================================= */
+
+.aurora-noise {
+  position: absolute;
+
+  inset: 0;
+
+  opacity: 0.025;
+
+  background-image:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E");
+
+  pointer-events: none;
+}
+
+/* =========================================================
+   GLASSMORPHISM — SIDEBAR
+========================================================= */
+
+.glass-sidebar {
+  position: relative;
+  z-index: 20;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(8, 8, 14, 0.82) 0%,
+      rgba(8, 7, 13, 0.88) 55%,
+      rgba(7, 7, 12, 0.94) 100%
+    );
+
+  border-right: 1px solid rgba(255, 255, 255, 0.13);
+
+  backdrop-filter:
+    blur(24px)
+    saturate(125%);
+
+  -webkit-backdrop-filter:
+    blur(24px)
+    saturate(125%);
+
+  box-shadow:
+    10px 0 35px rgba(0, 0, 0, 0.22),
+    inset -1px 0 0 rgba(255, 255, 255, 0.025);
+}
+
+/* =========================================================
+   GLASSMORPHISM — TOP BAR
+========================================================= */
+
+.glass-topbar {
+  position: relative;
+  z-index: 30;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(8, 8, 14, 0.86) 0%,
+      rgba(13, 10, 20, 0.80) 45%,
+      rgba(15, 10, 25, 0.84) 100%
+    );
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+
+  backdrop-filter:
+    blur(26px)
+    saturate(135%);
+
+  -webkit-backdrop-filter:
+    blur(26px)
+    saturate(135%);
+
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.20),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.025);
+}
+
+/* =========================================================
+   GLASS LOGO
+========================================================= */
+
+.glass-logo {
+  position: relative;
+
+  border: 1px solid rgba(255, 255, 255, 0.15);
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(124, 255, 103, 0.10),
+      rgba(82, 39, 255, 0.14)
+    );
+
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.glass-logo:hover {
+  border-color: rgba(180, 150, 255, 0.35);
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(124, 255, 103, 0.15),
+      rgba(82, 39, 255, 0.20)
+    );
+
+  box-shadow:
+    0 0 25px rgba(82, 39, 255, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+
+/* =========================================================
+   SIDEBAR NAVIGATION
+========================================================= */
+
+.glass-nav-item {
+  position: relative;
+
+  border: 1px solid transparent;
+
+  background: rgba(255, 255, 255, 0.015);
+
+  color: rgba(255, 255, 255, 0.68);
+
+  transition:
+    color 0.22s ease,
+    background 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    transform 0.22s ease;
+}
+
+.glass-nav-item:hover {
+  color: rgba(255, 255, 255, 0.96);
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.075),
+      rgba(155, 92, 255, 0.08)
+    );
+
+  border-color: rgba(255, 255, 255, 0.12);
+
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.045);
+
+  transform: translateX(2px);
+}
+
+/* =========================================================
+   ACTIVE SIDEBAR ITEM
+========================================================= */
+
+.glass-nav-item-active {
+  position: relative;
+
+  border: 1px solid rgba(180, 150, 255, 0.24);
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(124, 255, 103, 0.10),
+      rgba(82, 39, 255, 0.16)
+    );
+
+  color: white;
+
+  box-shadow:
+    0 8px 25px rgba(82, 39, 255, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.glass-nav-item-active::before {
+  content: "";
+
+  position: absolute;
+
+  left: -1px;
+  top: 10px;
+  bottom: 10px;
+
+  width: 2px;
+
+  border-radius: 999px;
+
+  background: #b497cf;
+
+  box-shadow:
+    0 0 10px rgba(180, 150, 255, 0.8);
+}
+
+/* =========================================================
+   GLASS BUTTON
+========================================================= */
+
+.glass-button {
+  border: 1px solid rgba(255, 255, 255, 0.10);
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.055),
+      rgba(255, 255, 255, 0.025)
+    );
+
+  color: rgba(255, 255, 255, 0.72);
+
+  backdrop-filter:
+    blur(14px)
+    saturate(125%);
+
+  -webkit-backdrop-filter:
+    blur(14px)
+    saturate(125%);
+
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.045);
+
+  transition:
+    color 0.22s ease,
+    background 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    transform 0.22s ease;
+}
+
+.glass-button:hover {
+  color: white;
+
+  border-color: rgba(180, 150, 255, 0.28);
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(155, 92, 255, 0.13),
+      rgba(255, 255, 255, 0.065)
+    );
+
+  box-shadow:
+    0 8px 24px rgba(82, 39, 255, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  transform: translateY(-1px);
+}
+
+/* =========================================================
+   GLASS SEARCH
+========================================================= */
+
+.glass-search {
+  border: 1px solid rgba(255, 255, 255, 0.11);
+
+  background:
+    rgba(8, 8, 14, 0.58);
+
+  color: rgba(255, 255, 255, 0.82);
+
+  backdrop-filter:
+    blur(16px)
+    saturate(130%);
+
+  -webkit-backdrop-filter:
+    blur(16px)
+    saturate(130%);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 6px 18px rgba(0, 0, 0, 0.14);
+
+  transition:
+    border-color 0.22s ease,
+    background 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.glass-search:focus-within {
+  border-color: rgba(180, 150, 255, 0.35);
+
+  background:
+    rgba(10, 8, 16, 0.72);
+
+  box-shadow:
+    0 0 0 3px rgba(82, 39, 255, 0.08),
+    0 8px 25px rgba(0, 0, 0, 0.18);
+}
+
+/* =========================================================
+   GLASS PROFILE
+========================================================= */
+
+.glass-profile {
+  border: 1px solid rgba(255, 255, 255, 0.11);
+
+  background:
+    rgba(8, 8, 14, 0.58);
+
+  backdrop-filter:
+    blur(16px)
+    saturate(130%);
+
+  -webkit-backdrop-filter:
+    blur(16px)
+    saturate(130%);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.045),
+    0 6px 18px rgba(0, 0, 0, 0.15);
+
+  transition:
+    border-color 0.22s ease,
+    background 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.glass-profile:hover {
+  border-color: rgba(180, 150, 255, 0.28);
+
+  background:
+    rgba(13, 10, 21, 0.72);
+
+  box-shadow:
+    0 8px 24px rgba(82, 39, 255, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+/* =========================================================
+   TEXT VISIBILITY
+========================================================= */
+
+.glass-sidebar h1,
+.glass-sidebar p,
+.glass-topbar h1,
+.glass-topbar p {
+  position: relative;
+  z-index: 2;
+}
+
+/* Secondary text */
+
+.glass-sidebar .text-gray-500,
+.glass-topbar .text-gray-500 {
+  color: rgba(255, 255, 255, 0.62) !important;
+}
+
+.glass-sidebar .text-gray-600,
+.glass-topbar .text-gray-600 {
+  color: rgba(255, 255, 255, 0.48) !important;
+}
+
+/* Sidebar labels */
+
+.glass-sidebar .text-sm {
+  text-shadow:
+    0 1px 8px rgba(0, 0, 0, 0.55);
+}
+
+/* =========================================================
+   EXTRA CONTENT READABILITY
+========================================================= */
+
+.glass-sidebar,
+.glass-topbar {
+  text-shadow:
+    0 1px 10px rgba(0, 0, 0, 0.45);
+}
+
+/* Keep icons visible */
+
+.glass-sidebar svg,
+.glass-topbar svg {
+  filter:
+    drop-shadow(0 1px 5px rgba(0, 0, 0, 0.45));
+}
+
+/* =========================================================
+   SMALL SCREENS
+========================================================= */
+
+@media (max-width: 1024px) {
+  .glass-topbar {
+    background:
+      rgba(8, 8, 14, 0.88);
+  }
+
+  .glass-sidebar {
+    background:
+      rgba(7, 7, 12, 0.92);
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-green,
+  .aurora-blue,
+  .aurora-purple,
+  .aurora-white {
+    animation: none;
+  }
+
+  .glass-nav-item,
+  .glass-button {
+    transition: none;
+    transform: none;
+  }
 }

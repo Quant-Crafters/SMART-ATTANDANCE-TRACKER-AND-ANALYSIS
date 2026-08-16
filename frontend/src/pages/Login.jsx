@@ -12,6 +12,23 @@ export default function Login() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const getDashboardRoute = (role) => {
+    switch (String(role || "").toLowerCase()) {
+      case "student":
+        return "/student-dashboard";
+
+      case "admin":
+        return "/dashboard";
+
+      case "faculty":
+        // Faculty dashboard will be added next.
+        return "/dashboard";
+
+      default:
+        return "/dashboard";
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -19,8 +36,11 @@ export default function Login() {
     setSubmitting(true);
 
     try {
-      await login(email, password);
-      navigate("/dashboard");
+      const user = await login(email.trim(), password);
+
+      const destination = getDashboardRoute(user?.role);
+
+      navigate(destination, { replace: true });
     } catch (error) {
       const message =
         error.response?.data?.message ||
@@ -35,6 +55,7 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-[#0b0d12] text-white flex items-center justify-center px-4">
       <div className="w-full max-w-md">
+
         {/* Brand */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold tracking-tight text-white">
@@ -48,6 +69,7 @@ export default function Login() {
 
         {/* Login Card */}
         <div className="rounded-2xl border border-[#252a35] bg-[#11141b] p-8 shadow-2xl">
+
           <div className="mb-7">
             <h2 className="text-2xl font-semibold text-white">
               Welcome back
@@ -59,6 +81,7 @@ export default function Login() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+
             {/* Email */}
             <div>
               <label
@@ -102,7 +125,9 @@ export default function Login() {
             {/* Error */}
             {error && (
               <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3">
-                <p className="text-sm text-red-400">{error}</p>
+                <p className="text-sm text-red-400">
+                  {error}
+                </p>
               </div>
             )}
 
