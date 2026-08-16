@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 # Ensure ai_engine root is in sys.path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from sqlalchemy import Column, Integer, String, Float, Date, DateTime, Text, ForeignKey, JSON
+from sqlalchemy import Column, Integer, BigInteger, String, Float, Date, DateTime, Text, ForeignKey, JSON, Boolean
 from sqlalchemy.orm import relationship
 from database.connection import Base
 
@@ -19,14 +19,21 @@ class StudentModel(Base):
     """
     __tablename__ = "students"
 
-    student_id = Column(Integer, primary_key=True, index=True)
+    id = Column(BigInteger, primary_key=True, index=True)
+    student_id = Column(String(50), nullable=False, unique=True, index=True)
+    name = Column(String(150), nullable=False)
+    email = Column(String(255), nullable=False, unique=True, index=True)
+    phone = Column(String(15), nullable=True)
     department = Column(String(100), nullable=False, index=True)
     semester = Column(Integer, nullable=False, index=True)
-    section = Column(String(10), nullable=False)
+    section = Column(String(10), nullable=True)
+    year = Column(Integer, nullable=True)
+    status = Column(Boolean, nullable=False, default=True, index=True)
+    created_at = Column(DateTime(timezone=True), nullable=True)
+    updated_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     attendances = relationship("AttendanceModel", back_populates="student")
-    leaves = relationship("LeaveModel", back_populates="student")
 
 
 class FacultyModel(Base):
@@ -35,11 +42,32 @@ class FacultyModel(Base):
     """
     __tablename__ = "faculty"
 
-    faculty_id = Column(Integer, primary_key=True, index=True)
-    department = Column(String(100), nullable=False, index=True)
+    id = Column(BigInteger, primary_key=True, index=True)
+    faculty_id = Column(String(50), nullable=False, unique=True, index=True)
+    name = Column(String(150), nullable=False)
+    email = Column(String(255), nullable=False, unique=True, index=True)
+    phone = Column(String(15), nullable=True)
+    department = Column(String(100), nullable=True, index=True)
+    designation = Column(String(100), nullable=True)
+    status = Column(Boolean, nullable=False, default=True, index=True)
+    created_at = Column(DateTime(timezone=True), nullable=True)
+    updated_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
-    subjects = relationship("SubjectModel", back_populates="faculty")
+    attendances = relationship("AttendanceModel", back_populates="faculty")
+
+
+class DepartmentModel(Base):
+    """
+    Mapped ORM Model for existing 'departments' database table.
+    """
+    __tablename__ = "departments"
+
+    id = Column(BigInteger, primary_key=True, index=True)
+    name = Column(String(150), nullable=False)
+    code = Column(String(20), nullable=False, unique=True, index=True)
+    description = Column(Text, nullable=True)
+    status = Column(Boolean, nullable=False, default=True)
 
 
 class SubjectModel(Base):
@@ -48,12 +76,17 @@ class SubjectModel(Base):
     """
     __tablename__ = "subjects"
 
-    subject_id = Column(Integer, primary_key=True, index=True)
-    faculty_id = Column(Integer, ForeignKey("faculty.faculty_id"), nullable=False)
-    subject_name = Column(String(150), nullable=False)
+    id = Column(BigInteger, primary_key=True, index=True)
+    name = Column(String(150), nullable=False)
+    code = Column(String(30), nullable=False, unique=True, index=True)
+    department_id = Column(BigInteger, ForeignKey("departments.id"), nullable=False, index=True)
+    semester = Column(Integer, nullable=False, index=True)
+    credits = Column(Integer, nullable=False, default=0)
+    status = Column(Boolean, nullable=False, default=True, index=True)
+    created_at = Column(DateTime(timezone=True), nullable=True)
+    updated_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
-    faculty = relationship("FacultyModel", back_populates="subjects")
     attendances = relationship("AttendanceModel", back_populates="subject")
 
 
@@ -63,31 +96,30 @@ class AttendanceModel(Base):
     """
     __tablename__ = "attendance"
 
-    attendance_id = Column(Integer, primary_key=True, index=True)
-    student_id = Column(Integer, ForeignKey("students.student_id"), nullable=False, index=True)
-    subject_id = Column(Integer, ForeignKey("subjects.subject_id"), nullable=False, index=True)
-    date = Column(Date, nullable=False, index=True)
-    status = Column(String(20), nullable=False)  # PRESENT, ABSENT, LATE, EXCUSED
+    id = Column(BigInteger, primary_key=True, index=True)
+    student_id = Column(BigInteger, ForeignKey("students.id"), nullable=False, index=True)
+    subject_id = Column(BigInteger, ForeignKey("subjects.id"), nullable=False, index=True)
+    faculty_id = Column(BigInteger, ForeignKey("faculty.id"), nullable=False, index=True)
+    date = Column(DateTime(timezone=True), nullable=False, index=True)
+    status = Column(String(20), nullable=False, index=True)  # present, absent, late
 
     # Relationships
     student = relationship("StudentModel", back_populates="attendances")
     subject = relationship("SubjectModel", back_populates="attendances")
+    faculty = relationship("FacultyModel", back_populates="attendances")
 
 
 class LeaveModel(Base):
     """
-    Mapped ORM Model for existing 'leaves' database table.
+    Mapped ORM Model for optional 'leaves' table.
     """
     __tablename__ = "leaves"
 
-    leave_id = Column(Integer, primary_key=True, index=True)
-    student_id = Column(Integer, ForeignKey("students.student_id"), nullable=False, index=True)
+    leave_id = Column(BigInteger, primary_key=True, index=True)
+    student_id = Column(BigInteger, ForeignKey("students.id"), nullable=False, index=True)
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     reason = Column(Text, nullable=True)
-
-    # Relationships
-    student = relationship("StudentModel", back_populates="leaves")
 
 
 class AcademicCalendarModel(Base):
@@ -99,11 +131,11 @@ class AcademicCalendarModel(Base):
     id = Column(Integer, primary_key=True, index=True)
     date = Column(Date, nullable=False, unique=True, index=True)
     holiday_name = Column(String(100), nullable=True)
-    holiday_type = Column(String(50), nullable=True)  # NATIONAL, FESTIVAL, ACADEMIC_BREAK, EXAM, VACATION, SPECIAL_WORKING_DAY, OTHER
-    is_holiday = Column(Integer, default=1, nullable=False)  # 1 = True, 0 = False
+    holiday_type = Column(String(50), nullable=True)
+    is_holiday = Column(Integer, default=1, nullable=False)
     source_pdf = Column(String(255), nullable=True)
     source_page = Column(Integer, nullable=True)
-    source_type = Column(String(50), default="SYNTHETIC_DEVELOPMENT", nullable=True)  # SYNTHETIC_DEVELOPMENT or UPLOADED_PDF
+    source_type = Column(String(50), default="SYNTHETIC_DEVELOPMENT", nullable=True)
     academic_year = Column(String(50), nullable=True)
     semester = Column(String(50), nullable=True)
 
@@ -118,10 +150,10 @@ class PredictionResultModel(Base):
     """
     __tablename__ = "prediction_results"
 
-    id = Column(Integer, primary_key=True, index=True)
-    student_id = Column(Integer, ForeignKey("students.student_id"), nullable=False, index=True)
+    id = Column(BigInteger, primary_key=True, index=True)
+    student_id = Column(BigInteger, ForeignKey("students.id"), nullable=False, index=True)
     predicted_pct = Column(Float, nullable=False)
-    risk_level = Column(String(20), nullable=False, index=True)  # LOW, MEDIUM, HIGH, CRITICAL
+    risk_level = Column(String(20), nullable=False, index=True)
     explanation = Column(Text, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
 
@@ -132,11 +164,11 @@ class AIAlertModel(Base):
     """
     __tablename__ = "ai_alerts"
 
-    id = Column(Integer, primary_key=True, index=True)
-    student_id = Column(Integer, ForeignKey("students.student_id"), nullable=True, index=True)
+    id = Column(BigInteger, primary_key=True, index=True)
+    student_id = Column(BigInteger, ForeignKey("students.id"), nullable=True, index=True)
     alert_type = Column(String(50), nullable=False)
     message = Column(Text, nullable=False)
-    severity = Column(String(20), nullable=False)  # INFO, WARNING, CRITICAL
+    severity = Column(String(20), nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
 
 
@@ -146,8 +178,8 @@ class PatternAnalysisModel(Base):
     """
     __tablename__ = "pattern_analysis"
 
-    id = Column(Integer, primary_key=True, index=True)
-    student_id = Column(Integer, nullable=True, index=True)
+    id = Column(BigInteger, primary_key=True, index=True)
+    student_id = Column(BigInteger, nullable=True, index=True)
     department = Column(String(100), nullable=True, index=True)
     pattern_type = Column(String(50), nullable=False)
     pattern_summary = Column(Text, nullable=False)
@@ -161,8 +193,8 @@ class RecommendationModel(Base):
     """
     __tablename__ = "recommendations"
 
-    id = Column(Integer, primary_key=True, index=True)
-    student_id = Column(Integer, ForeignKey("students.student_id"), nullable=False, index=True)
+    id = Column(BigInteger, primary_key=True, index=True)
+    student_id = Column(BigInteger, ForeignKey("students.id"), nullable=False, index=True)
     recommendation_text = Column(Text, nullable=False)
     priority = Column(String(20), default="MEDIUM")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
@@ -174,9 +206,9 @@ class FacultyAnalyticsModel(Base):
     """
     __tablename__ = "faculty_analytics"
 
-    id = Column(Integer, primary_key=True, index=True)
-    faculty_id = Column(Integer, ForeignKey("faculty.faculty_id"), nullable=False, index=True)
-    subject_id = Column(Integer, ForeignKey("subjects.subject_id"), nullable=True)
+    id = Column(BigInteger, primary_key=True, index=True)
+    faculty_id = Column(BigInteger, ForeignKey("faculty.id"), nullable=False, index=True)
+    subject_id = Column(BigInteger, ForeignKey("subjects.id"), nullable=True)
     class_avg_pct = Column(Float, nullable=False)
     at_risk_count = Column(Integer, nullable=False)
     insights_json = Column(JSON, nullable=True)
@@ -189,9 +221,9 @@ class GeneratedReportModel(Base):
     """
     __tablename__ = "generated_reports"
 
-    id = Column(Integer, primary_key=True, index=True)
-    report_type = Column(String(50), nullable=False)  # STUDENT, FACULTY, ADMIN
-    target_id = Column(Integer, nullable=True)
+    id = Column(BigInteger, primary_key=True, index=True)
+    report_type = Column(String(50), nullable=False)
+    target_id = Column(BigInteger, nullable=True)
     file_path = Column(String(255), nullable=False)
     summary_text = Column(Text, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

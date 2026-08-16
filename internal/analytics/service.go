@@ -1,14 +1,20 @@
 package analytics
 
+import (
+	"github.com/Quant-Crafters/SMART-ATTANDANCE-TRACKER-AND-ANALYSIS/internal/ai"
+)
+
 // Service handles analytics business logic.
 type Service struct {
 	repository *Repository
+	aiClient   *ai.Client
 }
 
 // NewService creates a new analytics service.
 func NewService() *Service {
 	return &Service{
 		repository: NewRepository(),
+		aiClient:   ai.NewClient(),
 	}
 }
 
@@ -169,4 +175,26 @@ func (s *Service) GetDashboardAnalytics() (*DashboardAnalytics, error) {
 		AbsentToday:     absent,
 		AttendanceRate:  rate,
 	}, nil
+}
+
+// AI Service Integrations
+
+func (s *Service) GetStudentAIPrediction(studentID string) (*ai.PredictionResponse, error) {
+	return s.aiClient.PredictStudent(studentID)
+}
+
+func (s *Service) GetStudentAIPatterns(studentID string) (*ai.PatternResponse, error) {
+	return s.aiClient.GetStudentPatterns(studentID)
+}
+
+func (s *Service) GetStudentAIAlerts(studentID string) (*ai.AlertsResponse, error) {
+	return s.aiClient.GetStudentAlerts(studentID)
+}
+
+func (s *Service) GetFacultyAIAnalytics(facultyID string) (*ai.FacultyAnalyticsResponse, error) {
+	return s.aiClient.GetFacultyAnalytics(facultyID)
+}
+
+func (s *Service) GenerateStudentAIReport(studentID string, formatType string) (*ai.ReportResponse, error) {
+	return s.aiClient.GenerateStudentReport(studentID, formatType)
 }

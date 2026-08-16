@@ -1,6 +1,7 @@
 package analytics
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -124,4 +125,97 @@ func (h *Handler) GetDashboardAnalytics(c *gin.Context) {
 		"Dashboard analytics fetched successfully",
 		data,
 	)
+}
+
+// AI Engine Gateway Handlers
+
+// GetStudentAIPrediction proxies AI prediction request.
+func (h *Handler) GetStudentAIPrediction(c *gin.Context) {
+	studentID := c.Param("student_id")
+	if studentID == "" {
+		response.Error(c, http.StatusBadRequest, "Student ID parameter required")
+		return
+	}
+
+	data, err := h.service.GetStudentAIPrediction(studentID)
+	if err != nil {
+		log.Printf("AI Prediction Error for student_id=%s: %v", studentID, err)
+		response.Error(c, http.StatusServiceUnavailable, err.Error())
+		return
+	}
+
+	response.Success(c, "AI student prediction fetched successfully", data)
+}
+
+// GetStudentAIPatterns proxies AI pattern analysis request.
+func (h *Handler) GetStudentAIPatterns(c *gin.Context) {
+	studentID := c.Param("student_id")
+	if studentID == "" {
+		response.Error(c, http.StatusBadRequest, "Student ID parameter required")
+		return
+	}
+
+	data, err := h.service.GetStudentAIPatterns(studentID)
+	if err != nil {
+		log.Printf("AI Patterns Error for student_id=%s: %v", studentID, err)
+		response.Error(c, http.StatusServiceUnavailable, err.Error())
+		return
+	}
+
+	response.Success(c, "AI student patterns fetched successfully", data)
+}
+
+// GetStudentAIAlerts proxies AI smart alerts request.
+func (h *Handler) GetStudentAIAlerts(c *gin.Context) {
+	studentID := c.Param("student_id")
+	if studentID == "" {
+		response.Error(c, http.StatusBadRequest, "Student ID parameter required")
+		return
+	}
+
+	data, err := h.service.GetStudentAIAlerts(studentID)
+	if err != nil {
+		log.Printf("AI Alerts Error for student_id=%s: %v", studentID, err)
+		response.Error(c, http.StatusServiceUnavailable, err.Error())
+		return
+	}
+
+	response.Success(c, "AI student alerts fetched successfully", data)
+}
+
+// GetFacultyAIAnalytics proxies AI faculty classroom analytics request.
+func (h *Handler) GetFacultyAIAnalytics(c *gin.Context) {
+	facultyID := c.Param("faculty_id")
+	if facultyID == "" {
+		response.Error(c, http.StatusBadRequest, "Faculty ID parameter required")
+		return
+	}
+
+	data, err := h.service.GetFacultyAIAnalytics(facultyID)
+	if err != nil {
+		log.Printf("AI Faculty Analytics Error for faculty_id=%s: %v", facultyID, err)
+		response.Error(c, http.StatusServiceUnavailable, err.Error())
+		return
+	}
+
+	response.Success(c, "AI faculty analytics fetched successfully", data)
+}
+
+// GenerateStudentAIReport proxies AI student report generation request.
+func (h *Handler) GenerateStudentAIReport(c *gin.Context) {
+	studentID := c.Param("student_id")
+	if studentID == "" {
+		response.Error(c, http.StatusBadRequest, "Student ID parameter required")
+		return
+	}
+	formatType := c.DefaultQuery("format_type", "PDF")
+
+	data, err := h.service.GenerateStudentAIReport(studentID, formatType)
+	if err != nil {
+		log.Printf("AI Report Generation Error for student_id=%s: %v", studentID, err)
+		response.Error(c, http.StatusServiceUnavailable, err.Error())
+		return
+	}
+
+	response.Success(c, "AI student report generated successfully", data)
 }

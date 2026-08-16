@@ -19,7 +19,9 @@ type Config struct {
 	DBPassword string
 	DBName     string
 	DBSSLMode  string
-	JWTSecret  string
+	JWTSecret     string
+	AIEngineURL   string
+	AIEngineAPIKey string
 }
 
 // AppConfig holds the loaded configuration.
@@ -45,7 +47,9 @@ func LoadConfig() {
 		DBName:     getEnv("DB_NAME", "attendsmart"),
 		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
 
-		JWTSecret: getEnv("JWT_SECRET", "change-this-secret"),
+		JWTSecret:      getEnv("JWT_SECRET", "change-this-secret"),
+		AIEngineURL:    getEnv("AI_ENGINE_URL", "http://localhost:8000"),
+		AIEngineAPIKey: getEnv("AI_ENGINE_API_KEY", ""),
 	}
 }
 

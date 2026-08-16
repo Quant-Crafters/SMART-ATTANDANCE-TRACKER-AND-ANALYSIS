@@ -34,7 +34,7 @@ class DataLoader:
 
         data = [
             {
-                "attendance_id": r.attendance_id,
+                "attendance_id": r.id,
                 "student_id": r.student_id,
                 "subject_id": r.subject_id,
                 "date": pd.to_datetime(r.date),
@@ -137,7 +137,7 @@ class DataLoader:
 
         data = [
             {
-                "attendance_id": r.attendance_id,
+                "attendance_id": r.id,
                 "student_id": r.student_id,
                 "subject_id": r.subject_id,
                 "date": pd.to_datetime(r.date),

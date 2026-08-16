@@ -44,5 +44,41 @@ func RegisterAnalyticsRoutes(router *gin.Engine) {
 			middleware.RoleMiddleware("admin"),
 			handler.GetDashboardAnalytics,
 		)
+
+		// AI Engine Gateway Routes
+		api.GET(
+			"/ai/predict/students/:student_id",
+			middleware.AuthMiddleware(),
+			middleware.RoleMiddleware("admin", "faculty", "student"),
+			handler.GetStudentAIPrediction,
+		)
+
+		api.GET(
+			"/ai/patterns/students/:student_id",
+			middleware.AuthMiddleware(),
+			middleware.RoleMiddleware("admin", "faculty", "student"),
+			handler.GetStudentAIPatterns,
+		)
+
+		api.GET(
+			"/ai/alerts/students/:student_id",
+			middleware.AuthMiddleware(),
+			middleware.RoleMiddleware("admin", "faculty", "student"),
+			handler.GetStudentAIAlerts,
+		)
+
+		api.GET(
+			"/ai/faculty/:faculty_id",
+			middleware.AuthMiddleware(),
+			middleware.RoleMiddleware("admin", "faculty"),
+			handler.GetFacultyAIAnalytics,
+		)
+
+		api.POST(
+			"/ai/reports/students/:student_id",
+			middleware.AuthMiddleware(),
+			middleware.RoleMiddleware("admin", "faculty", "student"),
+			handler.GenerateStudentAIReport,
+		)
 	}
 }

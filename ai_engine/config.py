@@ -35,6 +35,11 @@ class Settings(BaseSettings):
         """
         Constructs PostgreSQL SQLAlchemy connection string.
         """
+        env_url = os.getenv("DATABASE_URL")
+        if env_url:
+            if env_url.startswith("postgres://"):
+                return env_url.replace("postgres://", "postgresql://", 1)
+            return env_url
         return (
             f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}"
             f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"

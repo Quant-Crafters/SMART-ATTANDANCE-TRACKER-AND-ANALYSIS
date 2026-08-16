@@ -2,13 +2,13 @@ import sys
 from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import Dict, Any
+from typing import Dict, Any, Union
 
 # Ensure ai_engine root is in sys.path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from database.connection import get_db
-from database.queries import save_generated_report
+from database.queries import save_generated_report, get_student_by_id
 from preprocessing.data_loader import DataLoader
 from preprocessing.validator import DataValidator
 from preprocessing.clean_data import DataCleaner
@@ -25,28 +25,34 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/api/v1/reports", tags=["AI Reporting"])
 predictor = AttendancePredictor()
 
+def _resolve_student_db_id(db: Session, student_id: Union[int, str]) -> int:
+    student_obj = get_student_by_id(db, student_id)
+    if student_obj:
+        return student_obj.id
+    if isinstance(student_id, int) or (isinstance(student_id, str) and student_id.isdigit()):
+        return int(student_id)
+    raise HTTPException(status_code=404, detail=f"Student record not found for student_id={student_id}")
+
 @router.post("/student/{student_id}")
 def generate_student_report_api(
-    student_id: int,
+    student_id: str,
     format_type: str = Query("PDF", description="PDF or EXCEL"),
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """
     Module 6 Endpoint:
     Triggers PDF or Excel report generation for a student.
-    Consumes centralized AI results without duplicating prediction logic.
     """
-    df_raw = DataLoader.load_student_attendance(db, student_id)
+    student_db_id = _resolve_student_db_id(db, student_id)
+    df_raw = DataLoader.load_student_attendance(db, student_db_id)
     if df_raw.empty:
         raise HTTPException(status_code=404, detail=f"No attendance logs found for student_id={student_id}")
 
-    # Fix 12: Validate Data and halt on fatal error
     _, is_fatal, fatal_errors, _ = DataValidator.validate_attendance_dataframe(df_raw)
     if is_fatal:
         raise HTTPException(status_code=422, detail=f"Fatal Data Validation Error: {fatal_errors}")
 
-    df_leaves = DataLoader.load_student_leaves(db, student_id)
-    # Fix 5: Pass academic calendar to pattern analyzer
+    df_leaves = DataLoader.load_student_leaves(db, student_db_id)
     df_calendar = DataLoader.load_academic_calendar(db)
     df_clean = DataCleaner.clean_attendance_data(df_raw)
 
@@ -70,7 +76,7 @@ def generate_student_report_api(
         save_generated_report(
             db=db,
             report_type=f"STUDENT_{format_type.upper()}",
-            target_id=student_id,
+            target_id=student_db_id,
             file_path=report_result["file_path"],
             summary_text=report_result["summary_text"]
         )

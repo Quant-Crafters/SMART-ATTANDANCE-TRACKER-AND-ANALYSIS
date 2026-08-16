@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 
 # Ensure ai_engine root is in sys.path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
@@ -28,50 +28,87 @@ def get_all_students(db: Session, department: Optional[str] = None) -> List[Stud
         query = query.filter(StudentModel.department == department)
     return query.all()
 
-def get_student_by_id(db: Session, student_id: int) -> Optional[StudentModel]:
+def get_student_by_id(db: Session, identifier: Union[int, str]) -> Optional[StudentModel]:
     """
-    Fetches a single student by primary key ID.
+    Fetches a single student by relational database primary key ID (students.id)
+    or by human/business student_id string (students.student_id).
     """
-    return db.query(StudentModel).filter(StudentModel.student_id == student_id).first()
+    # 1. Try numeric primary key lookup first if identifier can be integer
+    if isinstance(identifier, int) or (isinstance(identifier, str) and identifier.isdigit()):
+        s = db.query(StudentModel).filter(StudentModel.id == int(identifier)).first()
+        if s:
+            return s
 
-def get_student_attendance_history(db: Session, student_id: int) -> List[AttendanceModel]:
+    # 2. Fall back to business student_id VARCHAR match
+    return db.query(StudentModel).filter(StudentModel.student_id == str(identifier)).first()
+
+def get_faculty_by_id(db: Session, identifier: Union[int, str]) -> Optional[FacultyModel]:
     """
-    Fetches all historical attendance records for a specific student.
+    Fetches a single faculty member by relational database primary key ID (faculty.id)
+    or by human/business faculty_id string (faculty.faculty_id).
+    """
+    if isinstance(identifier, int) or (isinstance(identifier, str) and identifier.isdigit()):
+        f = db.query(FacultyModel).filter(FacultyModel.id == int(identifier)).first()
+        if f:
+            return f
+    return db.query(FacultyModel).filter(FacultyModel.faculty_id == str(identifier)).first()
+
+def get_student_attendance_history(db: Session, student_db_id: int) -> List[AttendanceModel]:
+    """
+    Fetches all historical attendance records for a specific student using database PK (students.id).
     """
     return (
         db.query(AttendanceModel)
-        .filter(AttendanceModel.student_id == student_id)
+        .filter(AttendanceModel.student_id == student_db_id)
         .order_by(AttendanceModel.date.asc())
         .all()
     )
 
-def get_student_leaves(db: Session, student_id: int) -> List[LeaveModel]:
+def get_student_leaves(db: Session, student_db_id: int) -> List[LeaveModel]:
     """
-    Fetches leave records for a specific student.
+    Safely fetches leave records for a specific student.
+    If the optional 'leaves' table does not exist in PostgreSQL, returns empty list safely.
     """
-    return (
-        db.query(LeaveModel)
-        .filter(LeaveModel.student_id == student_id)
-        .order_by(LeaveModel.start_date.asc())
-        .all()
-    )
+    try:
+        from sqlalchemy import inspect
+        inspector = inspect(db.bind)
+        if not inspector.has_table("leaves"):
+            return []
+        return (
+            db.query(LeaveModel)
+            .filter(LeaveModel.student_id == student_db_id)
+            .order_by(LeaveModel.start_date.asc())
+            .all()
+        )
+    except Exception as e:
+        logger.info(f"Leaves table unqueryable or not present ({e}). Returning empty leave list.")
+        db.rollback()
+        return []
 
 def get_department_attendance_records(db: Session, department: str) -> List[AttendanceModel]:
     """
     Fetches attendance records for all students within a department.
+    Joins attendance.student_id = students.id.
     """
     return (
         db.query(AttendanceModel)
-        .join(StudentModel, AttendanceModel.student_id == StudentModel.student_id)
+        .join(StudentModel, AttendanceModel.student_id == StudentModel.id)
         .filter(StudentModel.department == department)
         .all()
     )
 
-def get_faculty_subjects(db: Session, faculty_id: int) -> List[SubjectModel]:
+def get_faculty_subjects(db: Session, faculty_db_id: int) -> List[SubjectModel]:
     """
     Fetches all subjects taught by a specific faculty member.
+    Joins subjects.id = attendance.subject_id where attendance.faculty_id = faculty.id.
     """
-    return db.query(SubjectModel).filter(SubjectModel.faculty_id == faculty_id).all()
+    return (
+        db.query(SubjectModel)
+        .join(AttendanceModel, SubjectModel.id == AttendanceModel.subject_id)
+        .filter(AttendanceModel.faculty_id == faculty_db_id)
+        .distinct()
+        .all()
+    )
 
 
 # ==========================================
@@ -86,7 +123,7 @@ def save_prediction_result(
     explanation: Optional[str] = None
 ) -> PredictionResultModel:
     """
-    Persists attendance prediction output to the database.
+    Persists attendance prediction output to the database referencing students.id.
     """
     record = PredictionResultModel(
         student_id=student_id,
@@ -214,12 +251,10 @@ def save_academic_calendar_events(
 ) -> int:
     """
     Safely stores/replaces uploaded academic calendar events in AcademicCalendarModel table.
-    Prevents duplicate date conflicts by updating existing date records or adding new ones.
     """
     from database.schema import AcademicCalendarModel
     from datetime import datetime
 
-    # Safely clear old UPLOADED_PDF records before writing new uploaded calendar
     if source_type == "UPLOADED_PDF":
         db.query(AcademicCalendarModel).filter(
             (AcademicCalendarModel.source_type == "UPLOADED_PDF") | 
@@ -265,4 +300,3 @@ def save_academic_calendar_events(
 
     db.commit()
     return count
-

@@ -1,0 +1,43 @@
+{
+  "model_name": "RandomForest",
+  "feature_columns": [
+    "current_attendance_pct",
+    "total_conducted",
+    "classes_attended",
+    "classes_absent",
+    "remaining_classes",
+    "leave_days",
+    "leave_to_absence_ratio",
+    "recent_attendance_pct",
+    "recent_3week_trend",
+    "current_consecutive_absences",
+    "max_consecutive_absences",
+    "worst_subject_pct",
+    "best_subject_pct",
+    "average_subject_attendance",
+    "subject_attendance_std",
+    "most_absent_day_rate"
+  ],
+  "training_samples": 200,
+  "validation_samples": 100,
+  "test_samples": 100,
+  "validation_metrics": {
+    "mae": 3.0631,
+    "mse": 19.0288,
+    "rmse": 4.3622,
+    "r2_score": 0.8808,
+    "evaluation_dataset_type": "SYNTHETIC_DEVELOPMENT"
+  },
+  "metrics": {
+    "mae": 2.861,
+    "mse": 16.8727,
+    "rmse": 4.1076,
+    "r2_score": 0.8943,
+    "evaluation_dataset_type": "SYNTHETIC_DEVELOPMENT"
+  },
+  "dataset_type": "SYNTHETIC_DEVELOPMENT",
+  "disclaimer": "Development / Synthetic Dataset model for SIH demonstration stage.",
+  "saved_at": "2026-08-14T17:04:43.982292",
+  "python_version": "3.13.9",
+  "sklearn_version": "1.7.2"
+}
