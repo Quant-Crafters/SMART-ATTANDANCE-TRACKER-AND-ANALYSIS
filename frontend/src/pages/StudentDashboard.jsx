@@ -24,7 +24,17 @@ import {
 
 import { useNavigate } from "react-router-dom";
 
-import api from "../api/client";
+import {
+  getMyStudentDashboard,
+} from "../api/student.api";
+
+import {
+  getStudentAttendanceHistory,
+} from "../api/attendance.api";
+
+import {
+  getSubjects,
+} from "../api/subject.api";
 
 /* =========================================================
    HELPERS
@@ -42,8 +52,13 @@ function getDateKey(value) {
   }
 
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(
+    date.getMonth() + 1
+  ).padStart(2, "0");
+
+  const day = String(
+    date.getDate()
+  ).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 }
@@ -92,7 +107,7 @@ function getInitials(name) {
     return "S";
   }
 
-  return name
+  return String(name)
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
@@ -106,12 +121,155 @@ function formatStatus(status) {
     return "Unknown";
   }
 
-  const normalized = String(status).toLowerCase();
+  const normalized =
+    String(status).toLowerCase();
 
   return (
     normalized.charAt(0).toUpperCase() +
     normalized.slice(1)
   );
+}
+
+/*
+ * Attendance records from different backend responses
+ * may use slightly different field names.
+ *
+ * Keep the UI tolerant of those formats.
+ */
+function getAttendanceDate(record) {
+  return (
+    record?.date ||
+    record?.attendance_date ||
+    record?.attendanceDate ||
+    record?.created_at ||
+    record?.createdAt ||
+    null
+  );
+}
+
+function getAttendanceStatus(record) {
+  if (
+    record?.status !== undefined &&
+    record?.status !== null
+  ) {
+    return String(record.status).toLowerCase();
+  }
+
+  if (
+    record?.is_present !== undefined
+  ) {
+    return record.is_present
+      ? "present"
+      : "absent";
+  }
+
+  if (
+    record?.isPresent !== undefined
+  ) {
+    return record.isPresent
+      ? "present"
+      : "absent";
+  }
+
+  return "";
+}
+
+function getSubjectId(subject) {
+  return (
+    subject?.id ??
+    subject?.subject_id ??
+    subject?.subjectId ??
+    null
+  );
+}
+
+function getSubjectName(subject) {
+  return (
+    subject?.name ||
+    subject?.subject_name ||
+    subject?.subjectName ||
+    subject?.title ||
+    subject?.code ||
+    (getSubjectId(subject)
+      ? `Subject #${getSubjectId(subject)}`
+      : "Subject")
+  );
+}
+
+/*
+ * Normalize API responses.
+ *
+ * This allows the frontend to handle:
+ *
+ *   [...]
+ *
+ * or:
+ *
+ *   { data: [...] }
+ *
+ * or:
+ *
+ *   { records: [...] }
+ *
+ * or:
+ *
+ *   { data: { records: [...] } }
+ */
+function extractArray(response) {
+  if (Array.isArray(response)) {
+    return response;
+  }
+
+  if (
+    response &&
+    Array.isArray(response.data)
+  ) {
+    return response.data;
+  }
+
+  if (
+    response &&
+    Array.isArray(response.records)
+  ) {
+    return response.records;
+  }
+
+  if (
+    response &&
+    Array.isArray(response.attendance)
+  ) {
+    return response.attendance;
+  }
+
+  if (
+    response?.data &&
+    Array.isArray(response.data.records)
+  ) {
+    return response.data.records;
+  }
+
+  if (
+    response?.data &&
+    Array.isArray(response.data.attendance)
+  ) {
+    return response.data.attendance;
+  }
+
+  if (
+    response?.data &&
+    Array.isArray(response.data.items)
+  ) {
+    return response.data.items;
+  }
+
+  if (
+    response &&
+    Array.isArray(response.items)
+  ) {
+    return response.items;
+  }
+
+  return [];
 }
 
 /* =========================================================
@@ -180,7 +338,9 @@ function StatCard({
         <div
           className={`flex h-10 w-10 items-center justify-center rounded-xl ${iconBackground}`}
         >
-          <Icon className={`h-5 w-5 ${iconClass}`} />
+          <Icon
+            className={`h-5 w-5 ${iconClass}`}
+          />
         </div>
       </div>
 
@@ -229,7 +389,8 @@ const sidebarItems = [
 function Sidebar({
   navigate,
 }) {
-  const currentPath = window.location.pathname;
+  const currentPath =
+    window.location.pathname;
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -417,7 +578,9 @@ function AttendanceTrend({
 
     attendanceRecords.forEach((record) => {
       const dateKey =
-        getDateKey(record.date);
+        getDateKey(
+          getAttendanceDate(record)
+        );
 
       if (!dateKey) {
         return;
@@ -433,7 +596,7 @@ function AttendanceTrend({
       grouped[dateKey].total += 1;
 
       if (
-        String(record.status).toLowerCase() ===
+        getAttendanceStatus(record) ===
         "present"
       ) {
         grouped[dateKey].present += 1;
@@ -510,7 +673,9 @@ function AttendanceTrend({
                 style={{
                   height: `${Math.max(
                     item.value * 0.72,
-                    item.value > 0 ? 4 : 0
+                    item.value > 0
+                      ? 4
+                      : 0
                   )}%`,
                 }}
               />
@@ -543,6 +708,7 @@ function StudentInformation({
       label: "Student ID",
       value:
         student?.student_id ||
+        student?.studentId ||
         student?.id ||
         "—",
     },
@@ -616,45 +782,91 @@ function StudentInformation({
 
 function SubjectAttendance({
   attendanceRecords,
+  subjects,
 }) {
-  const subjects = useMemo(() => {
-    const grouped = {};
+  const subjectAttendance =
+    useMemo(() => {
+      const grouped = {};
 
-    attendanceRecords.forEach((record) => {
-      const subjectId =
-        record.subject_id ??
-        record.subjectId;
+      /*
+       * First create an entry for every subject.
+       *
+       * This means a subject can appear even when
+       * there are currently zero attendance records.
+       */
+      subjects.forEach((subject) => {
+        const subjectId =
+          getSubjectId(subject);
 
-      const key =
-        subjectId !== undefined &&
-        subjectId !== null
-          ? String(subjectId)
-          : "unknown";
+        if (
+          subjectId === null ||
+          subjectId === undefined
+        ) {
+          return;
+        }
 
-      if (!grouped[key]) {
+        const key =
+          String(subjectId);
+
         grouped[key] = {
           id: key,
-          name:
-            record.subject_name ||
-            record.subject ||
-            `Subject #${key}`,
+          name: getSubjectName(subject),
           total: 0,
           present: 0,
         };
-      }
+      });
 
-      grouped[key].total += 1;
+      /*
+       * Then add attendance records.
+       */
+      attendanceRecords.forEach(
+        (record) => {
+          const subjectId =
+            record?.subject_id ??
+            record?.subjectId ??
+            record?.subject?.id ??
+            record?.subject?.subject_id;
 
-      if (
-        String(record.status).toLowerCase() ===
-        "present"
-      ) {
-        grouped[key].present += 1;
-      }
-    });
+          if (
+            subjectId === null ||
+            subjectId === undefined
+          ) {
+            return;
+          }
 
-    return Object.values(grouped);
-  }, [attendanceRecords]);
+          const key =
+            String(subjectId);
+
+          if (!grouped[key]) {
+            grouped[key] = {
+              id: key,
+              name:
+                record?.subject_name ||
+                record?.subjectName ||
+                record?.subject?.name ||
+                record?.subject ||
+                `Subject #${key}`,
+              total: 0,
+              present: 0,
+            };
+          }
+
+          grouped[key].total += 1;
+
+          if (
+            getAttendanceStatus(record) ===
+            "present"
+          ) {
+            grouped[key].present += 1;
+          }
+        }
+      );
+
+      return Object.values(grouped);
+    }, [
+      attendanceRecords,
+      subjects,
+    ]);
 
   return (
     <GlassCard>
@@ -676,65 +888,79 @@ function SubjectAttendance({
 
       <div className="mt-5">
 
-        {subjects.length === 0 ? (
+        {subjectAttendance.length === 0 ? (
           <div className="flex min-h-36 flex-col items-center justify-center rounded-xl border border-dashed border-white/[0.08] bg-black/10">
 
             <BookOpen className="h-7 w-7 text-gray-700" />
 
             <p className="mt-3 text-xs text-gray-500">
-              No subject attendance data
+              No subjects found
             </p>
+
           </div>
         ) : (
           <div className="space-y-3">
 
-            {subjects.map((subject) => {
-              const percentage =
-                subject.total > 0
-                  ? Math.round(
-                      (subject.present /
-                        subject.total) *
-                        100
-                    )
-                  : 0;
+            {subjectAttendance.map(
+              (subject) => {
+                const percentage =
+                  subject.total > 0
+                    ? Math.round(
+                        (subject.present /
+                          subject.total) *
+                          100
+                      )
+                    : 0;
 
-              return (
-                <div
-                  key={subject.id}
-                  className="rounded-xl border border-white/[0.06] bg-white/[0.025] p-4"
-                >
+                return (
+                  <div
+                    key={subject.id}
+                    className="rounded-xl border border-white/[0.06] bg-white/[0.025] p-4"
+                  >
 
-                  <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between">
 
-                    <span className="truncate text-xs font-medium text-gray-300">
-                      {subject.name}
-                    </span>
+                      <span className="truncate text-xs font-medium text-gray-300">
+                        {subject.name}
+                      </span>
 
-                    <span className="text-xs font-semibold text-purple-300">
-                      {percentage}%
-                    </span>
+                      <span
+                        className={`text-xs font-semibold ${
+                          subject.total === 0
+                            ? "text-gray-500"
+                            : percentage < 75
+                            ? "text-red-300"
+                            : "text-purple-300"
+                        }`}
+                      >
+                        {subject.total === 0
+                          ? "—"
+                          : `${percentage}%`}
+                      </span>
+
+                    </div>
+
+                    <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-[#5227ff] to-[#b497cf]"
+                        style={{
+                          width: `${percentage}%`,
+                        }}
+                      />
+
+                    </div>
+
+                    <p className="mt-2 text-[9px] text-gray-600">
+                      {subject.total === 0
+                        ? "No attendance recorded yet"
+                        : `${subject.present} present · ${subject.total} classes`}
+                    </p>
 
                   </div>
-
-                  <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
-
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-[#5227ff] to-[#b497cf]"
-                      style={{
-                        width: `${percentage}%`,
-                      }}
-                    />
-
-                  </div>
-
-                  <p className="mt-2 text-[9px] text-gray-600">
-                    {subject.present} present ·{" "}
-                    {subject.total} classes
-                  </p>
-
-                </div>
-              );
-            })}
+                );
+              }
+            )}
 
           </div>
         )}
@@ -750,16 +976,21 @@ function SubjectAttendance({
 function RecentAttendance({
   attendanceRecords,
 }) {
-  const recentRecords = useMemo(() => {
-    return [...attendanceRecords]
-      .sort((a, b) => {
-        return (
-          new Date(b.date).getTime() -
-          new Date(a.date).getTime()
-        );
-      })
-      .slice(0, 5);
-  }, [attendanceRecords]);
+  const recentRecords =
+    useMemo(() => {
+      return [...attendanceRecords]
+        .sort((a, b) => {
+          return (
+            new Date(
+              getAttendanceDate(b)
+            ).getTime() -
+            new Date(
+              getAttendanceDate(a)
+            ).getTime()
+          );
+        })
+        .slice(0, 5);
+    }, [attendanceRecords]);
 
   return (
     <GlassCard>
@@ -793,11 +1024,10 @@ function RecentAttendance({
           </div>
         ) : (
           recentRecords.map((record) => {
-
             const status =
-              String(
-                record.status || ""
-              ).toLowerCase();
+              getAttendanceStatus(
+                record
+              );
 
             const present =
               status === "present";
@@ -807,7 +1037,12 @@ function RecentAttendance({
 
             return (
               <div
-                key={record.id}
+                key={
+                  record.id ||
+                  `${getAttendanceDate(
+                    record
+                  )}-${record.subject_id}`
+                }
                 className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.025] px-4 py-3 transition hover:border-purple-400/20 hover:bg-purple-500/5"
               >
 
@@ -835,6 +1070,8 @@ function RecentAttendance({
 
                     <p className="truncate text-xs font-medium text-gray-300">
                       {record.subject_name ||
+                        record.subjectName ||
+                        record.subject?.name ||
                         record.subject ||
                         (record.subject_id
                           ? `Subject #${record.subject_id}`
@@ -843,11 +1080,15 @@ function RecentAttendance({
 
                     <p className="mt-1 text-[9px] text-gray-600">
                       {formatDate(
-                        record.date
+                        getAttendanceDate(
+                          record
+                        )
                       )}{" "}
                       ·{" "}
                       {formatTime(
-                        record.date
+                        getAttendanceDate(
+                          record
+                        )
                       )}
                     </p>
 
@@ -897,6 +1138,11 @@ export default function StudentDashboard() {
     setAttendanceRecords,
   ] = useState([]);
 
+  const [
+    subjects,
+    setSubjects,
+  ] = useState([]);
+
   const [loading, setLoading] =
     useState(true);
 
@@ -909,80 +1155,50 @@ export default function StudentDashboard() {
 
   const loadStudentDashboard =
     useCallback(async () => {
-
       try {
         setError("");
         setLoading(true);
 
         /*
-         * IMPORTANT:
+         * ===================================================
+         * STEP 1
          *
-         * Your Axios client does NOT automatically add
-         * "/api" to requests.
-         *
-         * Therefore the backend endpoint:
-         *
-         *   GET http://localhost:8080/api/student/dashboard
-         *
-         * must be called as:
-         *
-         *   api.get("/api/student/dashboard")
-         *
-         * Previously this component called:
-         *
-         *   api.get("/student/dashboard")
-         *
-         * which caused:
-         *
-         *   GET http://localhost:8080/student/dashboard
-         *   404 Not Found
+         * Get the authenticated student's dashboard.
          *
          * The backend identifies the student from the JWT.
-         * No student ID is sent from the frontend.
+         * No student ID is sent here.
+         * ===================================================
          */
 
-        const response =
-          await api.get(
-            "/api/student/dashboard"
-          );
+        const dashboardResponse =
+          await getMyStudentDashboard();
 
         console.log(
           "STUDENT DASHBOARD RESPONSE:",
-          response.data
+          dashboardResponse
         );
 
         /*
-         * Expected backend response:
+         * The API function already returns response.data.
+         *
+         * Therefore we support both:
          *
          * {
          *   success: true,
-         *   message: "Student dashboard fetched successfully",
-         *   data: {
-         *     student: {
-         *       id: 1,
-         *       student_id: "CSE2026001",
-         *       name: "Rahul Sharma",
-         *       email: "rahul.sharma@example.com",
-         *       department: "Computer Science",
-         *       semester: 6,
-         *       section: "A",
-         *       year: 3,
-         *       status: true
-         *     },
+         *   data: {...}
+         * }
          *
-         *     attendance: {
-         *       total_classes: 0,
-         *       present_classes: 0,
-         *       absent_classes: 0,
-         *       attendance_rate: 0,
-         *       low_attendance: true
-         *     }
-         *   }
+         * and:
+         *
+         * {
+         *   student: {...},
+         *   attendance: {...}
          * }
          */
 
         const dashboardData =
-          response.data?.data;
+          dashboardResponse?.data ||
+          dashboardResponse;
 
         if (!dashboardData) {
           throw new Error(
@@ -1013,32 +1229,149 @@ export default function StudentDashboard() {
         );
 
         /*
-         * Save the actual logged-in student.
+         * Save student profile.
          */
         setStudent(
           currentStudent
         );
 
         /*
-         * The backend dashboard endpoint currently returns
-         * attendance summary statistics.
+         * Save attendance summary.
          */
         setAnalytics(
           attendanceData || null
         );
 
         /*
-         * The dashboard endpoint does not currently return
-         * the complete attendance history.
+         * ===================================================
+         * STEP 2
          *
-         * Keep this as an empty array so the existing charts,
-         * subject section and recent attendance section
-         * remain safe.
+         * Get complete attendance history.
+         *
+         * This is the data that was previously missing.
+         * ===================================================
          */
-        setAttendanceRecords([]);
 
+        const studentId =
+          currentStudent.id;
+
+        if (
+          studentId !== undefined &&
+          studentId !== null
+        ) {
+          try {
+            const historyResponse =
+              await getStudentAttendanceHistory(
+                studentId
+              );
+
+            console.log(
+              "STUDENT ATTENDANCE HISTORY:",
+              historyResponse
+            );
+
+            const history =
+              extractArray(
+                historyResponse
+              );
+
+            console.log(
+              "NORMALIZED ATTENDANCE RECORDS:",
+              history
+            );
+
+            setAttendanceRecords(
+              history
+            );
+          } catch (historyError) {
+            /*
+             * Do not destroy the whole dashboard if
+             * only attendance history fails.
+             */
+            console.error(
+              "Failed to load attendance history:",
+              historyError
+            );
+
+            console.error(
+              "ATTENDANCE STATUS:",
+              historyError?.response?.status
+            );
+
+            console.error(
+              "ATTENDANCE RESPONSE:",
+              historyError?.response?.data
+            );
+
+            setAttendanceRecords([]);
+          }
+
+          /*
+           * =================================================
+           * STEP 3
+           *
+           * Get the student's subjects.
+           *
+           * This is separate from attendance history because
+           * a student should see subjects even when there are
+           * zero attendance records for that subject.
+           * =================================================
+           */
+
+          try {
+            const subjectsResponse =
+              await getSubjects();
+
+            console.log(
+              "SUBJECTS RESPONSE:",
+              subjectsResponse
+            );
+
+            const subjectList =
+              extractArray(
+                subjectsResponse
+              );
+
+            console.log(
+              "NORMALIZED SUBJECTS:",
+              subjectList
+            );
+
+            setSubjects(
+              subjectList
+            );
+          } catch (subjectsError) {
+            /*
+             * Again, don't break the complete dashboard
+             * just because the subjects endpoint failed.
+             */
+            console.error(
+              "Failed to load subjects:",
+              subjectsError
+            );
+
+            console.error(
+              "SUBJECT STATUS:",
+              subjectsError?.response?.status
+            );
+
+            console.error(
+              "SUBJECT RESPONSE:",
+              subjectsError?.response?.data
+            );
+
+            setSubjects([]);
+          }
+        } else {
+          console.error(
+            "Student database ID is missing:",
+            currentStudent
+          );
+
+          setAttendanceRecords([]);
+          setSubjects([]);
+        }
       } catch (err) {
-
         console.error(
           "Student dashboard error:",
           err
@@ -1062,11 +1395,9 @@ export default function StudentDashboard() {
             err?.message ||
             "Failed to load student dashboard."
         );
-
       } finally {
         setLoading(false);
       }
-
     }, []);
 
   /* =======================================================
@@ -1074,7 +1405,6 @@ export default function StudentDashboard() {
   ======================================================= */
 
   useEffect(() => {
-
     loadStudentDashboard();
 
     /*
@@ -1089,7 +1419,6 @@ export default function StudentDashboard() {
     return () => {
       clearInterval(interval);
     };
-
   }, [loadStudentDashboard]);
 
   /* =======================================================
@@ -1098,9 +1427,8 @@ export default function StudentDashboard() {
 
   const attendanceStats =
     useMemo(() => {
-
       /*
-       * These values now come directly from:
+       * These values come from:
        *
        * /api/student/dashboard
        */
@@ -1125,6 +1453,55 @@ export default function StudentDashboard() {
           analytics?.attendance_rate ?? 0
         );
 
+      /*
+       * If the dashboard summary is unavailable,
+       * calculate the values from attendance history.
+       */
+      if (
+        total === 0 &&
+        attendanceRecords.length > 0
+      ) {
+        const calculatedTotal =
+          attendanceRecords.length;
+
+        const calculatedPresent =
+          attendanceRecords.filter(
+            (record) =>
+              getAttendanceStatus(
+                record
+              ) === "present"
+          ).length;
+
+        const calculatedAbsent =
+          attendanceRecords.filter(
+            (record) =>
+              getAttendanceStatus(
+                record
+              ) === "absent"
+          ).length;
+
+        const calculatedPercentage =
+          calculatedTotal > 0
+            ? Math.round(
+                (calculatedPresent /
+                  calculatedTotal) *
+                  100
+              )
+            : 0;
+
+        return {
+          present:
+            calculatedPresent,
+          absent:
+            calculatedAbsent,
+          late: 0,
+          total:
+            calculatedTotal,
+          percentage:
+            calculatedPercentage,
+        };
+      }
+
       return {
         present,
         absent,
@@ -1138,27 +1515,49 @@ export default function StudentDashboard() {
             : 0
         ),
       };
-
-    }, [analytics]);
+    }, [
+      analytics,
+      attendanceRecords,
+    ]);
 
   /* =======================================================
      TODAY
   ======================================================= */
 
-  /*
-   * The current student-dashboard endpoint returns
-   * overall attendance statistics rather than individual
-   * attendance records for today.
-   *
-   * Keep these at zero until the dedicated history endpoint
-   * is connected to this dashboard.
-   */
+  const todayRecords =
+    useMemo(() => {
+      const todayKey =
+        getTodayKey();
 
-  const todayRecords = [];
+      return attendanceRecords.filter(
+        (record) =>
+          getDateKey(
+            getAttendanceDate(
+              record
+            )
+          ) === todayKey
+      );
+    }, [attendanceRecords]);
 
-  const todayPresent = 0;
+  const todayPresent =
+    useMemo(() => {
+      return todayRecords.filter(
+        (record) =>
+          getAttendanceStatus(
+            record
+          ) === "present"
+      ).length;
+    }, [todayRecords]);
 
-  const todayAbsent = 0;
+  const todayAbsent =
+    useMemo(() => {
+      return todayRecords.filter(
+        (record) =>
+          getAttendanceStatus(
+            record
+          ) === "absent"
+      ).length;
+    }, [todayRecords]);
 
   /* =======================================================
      RENDER
@@ -1375,6 +1774,7 @@ export default function StudentDashboard() {
                 attendanceRecords={
                   attendanceRecords
                 }
+                subjects={subjects}
               />
 
               <RecentAttendance

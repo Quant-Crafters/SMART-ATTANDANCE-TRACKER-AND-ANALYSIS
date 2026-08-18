@@ -13,7 +13,10 @@ export const getStudents = async () => {
  * Get a single student by database ID.
  */
 export const getStudentById = async (id) => {
-  const response = await api.get(`/api/students/${id}`);
+  const response = await api.get(
+    `/api/students/${id}`
+  );
+
   return response.data;
 };
 
@@ -25,14 +28,34 @@ export const getStudentById = async (id) => {
  * We do NOT send a student ID from the browser.
  */
 export const getMyStudentProfile = async () => {
-  const response = await api.get("/api/students/me");
+  const response = await api.get(
+    "/api/students/me"
+  );
+
+  return response.data;
+};
+
+/*
+ * Get the currently authenticated student's dashboard.
+ *
+ * IMPORTANT:
+ * The backend determines the student from the JWT.
+ * We do NOT send a student ID from the browser.
+ */
+export const getMyStudentDashboard = async () => {
+  const response = await api.get(
+    "/api/student/dashboard"
+  );
+
   return response.data;
 };
 
 /*
  * Create student.
  */
-export const createStudent = async (studentData) => {
+export const createStudent = async (
+  studentData
+) => {
   const response = await api.post(
     "/api/students",
     studentData
